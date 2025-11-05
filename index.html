@@ -1,400 +1,483 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>HRSA — Prototype</title>
+import React from "react";
 
-  <!-- Tailwind (CDN) -->
-  <script src="https://cdn.tailwindcss.com"></script>
+/**
+ * HRSA — Preview App (Interactive Prototype)
+ * - Single-file React component (no external HTML wrapper)
+ * - No framer-motion; animations via small CSS keyframes
+ * - Tailwind classes assumed to be available in the canvas preview
+ * - Images are loaded from relative paths (same folder as this file)
+ *   Put these files next to index.html on GitHub Pages:
+ *   HRSAMarca.png, IRATMARCA.png, ROBLEXMARCA.png, TinexCian.png,
+ *   BrickBritishx1.png, DM02x1.png, HidroCaobax1.png, N4x1.png,
+ *   TinexSYBx18.png, TinexSYBx920.png
+ */
 
-  <!-- React + Babel (CDN) -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+// Safe inline SVG placeholder (UTF-8 encoded, avoids btoa/CSP issues)
+const PLACEHOLDER =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='640' height='400'>
+      <rect width='100%' height='100%' fill='#e5e7eb'/>
+      <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
+            font-family='Arial, Helvetica, sans-serif' font-size='22' fill='#6b7280'>Sin imagen</text>
+    </svg>`
+  );
 
-  <!-- Framer Motion UMD (para animaciones sin build) -->
-  <script src="https://unpkg.com/framer-motion/dist/framer-motion.umd.js"></script>
+// Relativos a la raíz donde publiques el HTML (GitHub Pages)
+const ASSETS: Record<string, string> = {
+  HRSA_MARCA: "HRSAMarca.png",
+  IRAT_LOGO: "IRATMARCA.png",
+  ROBLEX_LOGO: "ROBLEXMARCA.png",
+  TINEX_LOGO: "TinexCian.png",
+  ROBLEX_BRIC: "BrickBritishx1.png",
+  IRAT_DM02: "DM02x1.png",
+  ROBLEX_HIDRO_CA: "HidroCaobax1.png",
+  IRAT_N4: "N4x1.png",
+  TINEX_20L: "TinexSYBx18.png",
+  TINEX_920: "TinexSYBx920.png",
+};
+const getAsset = (k: string) => ASSETS[k] || "";
+const imgOr = (key: string) => getAsset(key) || PLACEHOLDER;
 
-  <style>
-    html,body{background:#fafafa}
-    /* fuerza dos líneas y altura compacta del texto junto al logo */
-    .brand-two-lines{
-      line-height: 1.05;
-      max-width: 10rem;            /* controla ancho para forzar wrap */
-      word-break: break-word;
-      white-space: normal;
-    }
-  </style>
-</head>
-<body class="text-neutral-900">
-  <div id="root"></div>
+// Datos
+const BRAND = {
+  IRAT:   { key: "IRAT",   color: "#000000", text: "#ffffff" },
+  Tinex:  { key: "Tinex",  color: "#00AEEF", text: "#ffffff" },
+  Roblex: { key: "Roblex", color: "#004F3D", text: "#ffffff" },
+};
 
-  <script type="text/babel" data-presets="react">
-    const { motion, AnimatePresence } = window.framerMotion;
+type Product = {
+  id: string; brand: "IRAT" | "Tinex" | "Roblex"; name: string; category: string;
+  usos: string[]; presentaciones: string[]; rendimiento: string; seguridad: string[];
+  desc: string; destacados: boolean; downloads: { ficha: boolean; hds: boolean };
+  image: keyof typeof ASSETS | string;
+};
 
-    /* ===== utils / assets ===== */
-    const _svg =
-      '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400">'
-      + '<rect width="100%" height="100%" fill="#e5e7eb"/>'
-      + '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"'
-      + ' font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#6b7280">Sin imagen</text>'
-      + '</svg>';
-    const PLACEHOLDER = "data:image/svg+xml;base64," + btoa(_svg);
+const PRODUCTS: Product[] = [
+  { id:"irat-01", brand:"IRAT",   name:"IRAT Disolve Especial N°4", category:"Disolventes", usos:["industria","obra"], presentaciones:["1 L"], rendimiento:"—", seguridad:["ghs02","ghs07"], desc:"Disolve especial para esmaltes horneables.", destacados:true, downloads:{ficha:true,hds:true}, image:"IRAT_N4" },
+  { id:"irat-02", brand:"IRAT",   name:"IRAT Thinner Universal DM-02", category:"Thinners",   usos:["industria","automotriz"], presentaciones:["1 L","20 L"], rendimiento:"—", seguridad:["ghs02"], desc:"Thinner para esmaltes sintéticos.", destacados:true, downloads:{ficha:true,hds:true}, image:"IRAT_DM02" },
+  { id:"tinex-01", brand:"Tinex", name:"Tinex 20L", category:"Thinners", usos:["industria","madera"], presentaciones:["20 L"], rendimiento:"—", seguridad:["ghs02"], desc:"Para limpieza y dilución de pinturas sintéticas.", destacados:true, downloads:{ficha:true,hds:true}, image:"TINEX_20L" },
+  { id:"tinex-02", brand:"Tinex", name:"Tinex 920cc", category:"Disolventes", usos:["obra","hogar"], presentaciones:["920 cc"], rendimiento:"—", seguridad:["ghs07"], desc:"Limpieza y dilución doméstica/profesional.", destacados:false, downloads:{ficha:true,hds:true}, image:"TINEX_920" },
+  { id:"roblex-01", brand:"Roblex", name:"Roblex BRIC Ladrillos", category:"Pinturas", usos:["obra"], presentaciones:["1 L"], rendimiento:"—", seguridad:["ghs02"], desc:"Recubrimiento protector para ladrillos.", destacados:true, downloads:{ficha:true,hds:true}, image:"ROBLEX_BRIC" },
+  { id:"roblex-02", brand:"Roblex", name:"Roblex Hidrolaca Caoba", category:"Barnices", usos:["madera","hogar"], presentaciones:["1 L"], rendimiento:"12–16 m²/L", seguridad:["ghs07"], desc:"Laca para maderas flexible y perdurable.", destacados:true, downloads:{ficha:true,hds:true}, image:"ROBLEX_HIDRO_CA" },
+];
 
-    const ASSETS = {
-      HRSA_MARCA: "HRSAMarca.png",
-      IRAT_LOGO: "IRATMARCA.png",
-      ROBLEX_LOGO: "ROBLEXMARCA.png",
-      TINEX_LOGO: "TinexCian.png",
-      ROBLEX_BRIC: "BrickBritishx1.png",
-      IRAT_DM02: "DM02x1.png",
-      ROBLEX_HIDRO_CA: "HidroCaobax1.png",
-      IRAT_N4: "N4x1.png",
-      TINEX_20L: "TinexSYBx18.png",
-      TINEX_920: "TinexSYBx920.png",
-    };
-    const getAsset = (k)=>ASSETS[k]||null;
-    const imgOr = (key, fb)=>{ const u = typeof key==='string'?getAsset(key):null; return (u&&u.length)?u:fb; };
+const uniq = (a: string[]) => Array.from(new Set(a));
+const usosAll = uniq(PRODUCTS.flatMap((p) => p.usos));
+const presAll = uniq(PRODUCTS.flatMap((p) => p.presentaciones));
 
-    /* ===== data ===== */
-    const BRAND = {
-      IRAT:   { key:"IRAT",   color:"#000000", text:"#ffffff" },
-      Tinex:  { key:"Tinex",  color:"#00AEEF", text:"#ffffff" },
-      Roblex: { key:"Roblex", color:"#004F3D", text:"#ffffff" },
-    };
+// UI Primitives
+const Card: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ className = "", children }) => (
+  <div className={`rounded-2xl border border-neutral-200 bg-white shadow-sm ${className}`}>{children}</div>
+);
+const CardContent: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ className = "", children }) => (
+  <div className={`p-4 ${className}`}>{children}</div>
+);
+const Button: React.FC<React.PropsWithChildren<{ className?: string; variant?: "solid" | "outline"; href?: string; target?: string; onClick?: (e: any) => void }>> = ({ className = "", variant = "solid", href = "#", target, onClick, children }) => (
+  <a
+    href={href}
+    target={target}
+    onClick={onClick}
+    className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition ${
+      variant === "outline"
+        ? "border border-neutral-300 text-neutral-800 bg-white hover:bg-neutral-50"
+        : "bg-[#F07B39] text-white hover:brightness-110"
+    } ${className}`}
+  >
+    {children}
+  </a>
+);
 
-    const PRODUCTS = [
-      // IRAT
-      { id:"irat-01", brand:"IRAT",   name:"IRAT Disolve Especial N°4", category:"Disolventes",
-        usos:["industria","obra"], presentaciones:["1 L"], rendimiento:"—",
-        seguridad:["ghs02","ghs07"], desc:"Disolve especial para esmaltes horneables.",
-        destacados:true, downloads:{ficha:true,hds:true}, image:"IRAT_N4" },
-      { id:"irat-02", brand:"IRAT",   name:"IRAT Thinner Universal DM-02", category:"Thinners",
-        usos:["industria","automotriz"], presentaciones:["1 L","20 L"], rendimiento:"—",
-        seguridad:["ghs02"], desc:"Thinner para esmaltes sintéticos.",
-        destacados:true, downloads:{ficha:true,hds:true}, image:"IRAT_DM02" },
+const Header: React.FC<{ onNav: (r: string) => void; active: string }> = ({ onNav, active }) => (
+  <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 grid grid-cols-2 md:grid-cols-12 items-center gap-3">
+      <div className="col-span-6 md:col-span-4 flex items-center gap-3">
+        <img src={imgOr("HRSA_MARCA")} alt="HRSA" className="h-10 md:h-12 w-auto" onError={(e: any) => (e.currentTarget.src = PLACEHOLDER)} />
+        <span className="brand-two-lines font-medium text-sm hidden sm:block">
+          Hugo Rodríguez<br />y Cía. S.A.
+        </span>
+      </div>
+      <nav className="col-span-6 md:col-span-8 flex justify-end gap-2 sm:gap-3 overflow-x-auto">
+        {["home", "IRAT", "Tinex", "Roblex", "seguridad", "contacto"].map((id) => (
+          <a
+            key={id}
+            className={`px-3 py-2 rounded-lg border ${active === id ? "bg-[#F07B39] text-white border-[#F07B39]" : ""}`}
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              onNav(id);
+              if (id === "contacto") {
+                const el = document.getElementById("Contacto");
+                el?.scrollIntoView({ behavior: "smooth" });
+              }
+            }}
+          >
+            {id === "home" ? "Inicio" : id[0].toUpperCase() + id.slice(1)}
+          </a>
+        ))}
+      </nav>
+    </div>
+  </div>
+);
 
-      // Tinex
-      { id:"tinex-01", brand:"Tinex", name:"Tinex 20L", category:"Thinners",
-        usos:["industria","madera"], presentaciones:["20 L"], rendimiento:"—",
-        seguridad:["ghs02"], desc:"Para limpieza y dilución de pinturas sintéticas.",
-        destacados:true, downloads:{ficha:true,hds:true}, image:"TINEX_20L" },
-      { id:"tinex-02", brand:"Tinex", name:"Tinex 920cc", category:"Disolventes",
-        usos:["obra","hogar"], presentaciones:["920 cc"], rendimiento:"—",
-        seguridad:["ghs07"], desc:"Limpieza y dilución doméstica/profesional.",
-        destacados:false, downloads:{ficha:true,hds:true}, image:"TINEX_920" },
+const BrandCard: React.FC<{ brand: any; tagline: string; onGo: () => void; i: number }> = ({ brand, tagline, onGo, i }) => (
+  <div className={`fade-up ${["", "delay-1", "delay-2"][i] || ""}`}>
+    <Card className="overflow-hidden">
+      <div className="h-32 relative overflow-hidden grid place-items-center" style={{ background: brand.color }}>
+        <img
+          src={brand.key === "IRAT" ? imgOr("IRAT_LOGO") : brand.key === "Tinex" ? imgOr("TINEX_LOGO") : imgOr("ROBLEX_LOGO")}
+          alt={brand.key + " logo"}
+          className="h-16 md:h-20 opacity-90"
+          onError={(e: any) => (e.currentTarget.src = PLACEHOLDER)}
+        />
+      </div>
+      <CardContent className="flex items-center justify-between">
+        <div>
+          <div className="text-lg font-bold">{brand.key}</div>
+          <div className="text-sm text-neutral-600">{tagline}</div>
+        </div>
+        <Button onClick={(e) => { e.preventDefault(); onGo(); }}>Ver más</Button>
+      </CardContent>
+    </Card>
+  </div>
+);
 
-      // Roblex
-      { id:"roblex-01", brand:"Roblex", name:"Roblex BRIC Ladrillos", category:"Pinturas",
-        usos:["obra"], presentaciones:["1 L"], rendimiento:"—",
-        seguridad:["ghs02"], desc:"Recubrimiento protector para ladrillos.",
-        destacados:true, downloads:{ficha:true,hds:true}, image:"ROBLEX_BRIC" },
-      { id:"roblex-02", brand:"Roblex", name:"Roblex Hidrolaca Caoba", category:"Barnices",
-        usos:["madera","hogar"], presentaciones:["1 L"], rendimiento:"12–16 m²/L",
-        seguridad:["ghs07"], desc:"Laca para maderas flexible y perdurable.",
-        destacados:true, downloads:{ficha:true,hds:true}, image:"ROBLEX_HIDRO_CA" },
-    ];
+const ProductCard: React.FC<{ p: Product; onOpen: (id: string) => void; i: number }> = ({ p, onOpen, i }) => (
+  <div className={`fade-in ${["", "delay-1", "delay-2"][i % 3] || ""}`}>
+    <Card className="hover:shadow-md transition">
+      <div className="h-64 md:h-72 rounded-t-2xl bg-white grid place-items-center overflow-hidden p-4">
+        <img src={imgOr(p.image as string)} alt={p.name} className="object-contain max-h-56 md:max-h-64 w-auto" onError={(e: any) => (e.currentTarget.src = PLACEHOLDER)} />
+      </div>
+      <CardContent>
+        <div className="text-xs text-neutral-500">{p.brand} · {p.category}</div>
+        <div className="font-semibold mt-1">{p.name}</div>
+        <div className="mt-2 flex flex-wrap gap-1">{p.usos.map((u) => (
+          <span key={u} className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 border">{u}</span>
+        ))}</div>
+        <div className="mt-3 flex justify-between items-center">
+          <Button variant="outline" onClick={(e) => { e.preventDefault(); onOpen(p.id); }}>Ver producto</Button>
+          <Button href={`https://wa.me/541175245758?text=${encodeURIComponent(`Hola HRSA, consulta por ${p.name} (marca ${p.brand})`)}`} target="_blank">WhatsApp</Button>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+);
 
-    const uniq = (a)=>Array.from(new Set(a));
-    const usosAll  = uniq(PRODUCTS.flatMap(p=>p.usos));
-    const presAll  = uniq(PRODUCTS.flatMap(p=>p.presentaciones));
-
-    /* ===== tiny UI ===== */
-    const Card = (p)=><div className={"rounded-2xl border border-neutral-200 bg-white shadow-sm "+(p.className||"")}>{p.children}</div>;
-    const CardContent=(p)=><div className={"p-4 "+(p.className||"")}>{p.children}</div>;
-    const Button=(p)=><a href={p.href||"#"} target={p.target}
-      onClick={p.onClick}
-      className={"inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition "+(p.variant==="outline"?"border border-neutral-300 text-neutral-800 bg-white hover:bg-neutral-50":"bg-[#F07B39] text-white hover:brightness-110")+" "+(p.className||"")}>{p.children}</a>;
-
-    /* ===== Header con texto en dos líneas ===== */
-    const Header = ({onNav, active}) => (
-      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 grid grid-cols-2 md:grid-cols-12 items-center gap-3">
-          <div className="col-span-6 md:col-span-4 flex items-center gap-3">
-            <img src={imgOr('HRSA_MARCA', PLACEHOLDER)} alt="HRSA" className="h-10 md:h-12 w-auto" onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
-            <span className="brand-two-lines font-medium text-sm hidden sm:block">
-              Hugo Rodríguez<br/>y Cía. S.A.
-            </span>
+const Drawer: React.FC<{ openId: string | null; onClose: () => void }> = ({ openId, onClose }) => {
+  const p = openId ? PRODUCTS.find((x) => x.id === openId) : null;
+  if (!p) return null;
+  return (
+    <div className="fixed inset-0 z-50">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose}></div>
+      <div className="absolute right-0 top-0 h-full w-full sm:w-[480px] bg-white shadow-2xl overflow-y-auto slide-in-right">
+        <div className="p-4 border-b flex items-center justify-between">
+          <div className="font-semibold">{p.name}</div>
+          <button className="px-3 py-1 rounded-lg border" onClick={onClose}>Cerrar</button>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="h-64 md:h-72 rounded-xl bg-white grid place-items-center overflow-hidden p-4">
+            <img src={imgOr(p.image as string)} alt={p.name} className="object-contain max-h-56 md:max-h-64 w-auto" onError={(e: any) => (e.currentTarget.src = PLACEHOLDER)} />
           </div>
-          <nav className="col-span-6 md:col-span-8 flex justify-end gap-2 sm:gap-3 overflow-x-auto">
-            {["home","IRAT","Tinex","Roblex","seguridad","contacto"].map(id=>(
-              <a key={id} className={"px-3 py-2 rounded-lg border "+(active===id?"bg-[#F07B39] text-white border-[#F07B39]":"")} href="#" onClick={(e)=>{e.preventDefault();onNav(id);}}>
-                {id==="home"?"Inicio":id[0].toUpperCase()+id.slice(1)}
-              </a>
+          <div className="text-sm text-neutral-500">{p.brand} · {p.category}</div>
+          <p className="text-neutral-700">{p.desc}</p>
+          <div className="flex flex-wrap gap-2">
+            {p.usos.map((u) => (
+              <span key={u} className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">{u}</span>
             ))}
-          </nav>
+            {p.presentaciones.map((pr) => (
+              <span key={pr} className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">{pr}</span>
+            ))}
+          </div>
+          <div className="text-sm"><b>Rendimiento:</b> {p.rendimiento}</div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" href="#">Ficha técnica</Button>
+            <Button variant="outline" href="#">HDS / MSDS</Button>
+          </div>
+          <div className="flex gap-2">
+            <Button href={`https://wa.me/541175245758?text=${encodeURIComponent(`Hola HRSA, consulta por ${p.name} (marca ${p.brand})`)}`} target="_blank">Consultar</Button>
+            <Button variant="outline" href="#Contacto">Formulario</Button>
+          </div>
         </div>
       </div>
-    );
+    </div>
+  );
+};
 
-    const BrandCard = ({brand, tagline, onGo, i}) => (
-      <motion.div initial={{opacity:0, y:12}} animate={{opacity:1, y:0}} transition={{delay:0.05*i}}>
-        <Card className="overflow-hidden">
-          <div className="h-32 relative overflow-hidden" style={{background:brand.color}}>
-            <img src={brand.key==='IRAT'?imgOr("IRAT_LOGO",PLACEHOLDER):brand.key==='Tinex'?imgOr("TINEX_LOGO",PLACEHOLDER):imgOr("ROBLEX_LOGO",PLACEHOLDER)}
-                 alt={brand.key+" logo"} className="absolute right-3 bottom-2 h-16 md:h-20 opacity-90" onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
-          </div>
-          <CardContent className="flex items-center justify-between">
+const BrandScreen: React.FC<{ brand: any; onOpen: (id: string) => void }> = ({ brand, onOpen }) => {
+  const [q, setQ] = React.useState("");
+  const [fu, setFu] = React.useState<string[]>([]);
+  const [fp, setFp] = React.useState<string[]>([]);
+  const cats = uniq(PRODUCTS.filter((p) => p.brand === brand.key).map((p) => p.category));
+  const toggle = (v: string, arr: string[], set: (x: string[]) => void) => set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
+
+  const list = PRODUCTS
+    .filter((p) => p.brand === brand.key)
+    .filter((p) => !q || p.name.toLowerCase().includes(q.toLowerCase()))
+    .filter((p) => !fu.length || fu.every((u) => p.usos.includes(u)))
+    .filter((p) => !fp.length || fp.every((pr) => p.presentaciones.includes(pr)));
+
+  return (
+    <div className="fade-in-slow">
+      <Card className="overflow-hidden">
+        <div className="h-48 md:h-64 relative" style={{ background: brand.color }}>
+          <div className="absolute inset-0 flex items-center px-6 md:px-10">
             <div>
-              <div className="text-lg font-bold">{brand.key}</div>
-              <div className="text-sm text-neutral-600">{tagline}</div>
+              <div className="text-white/90 text-sm">Marca</div>
+              <h2 className="text-3xl md:text-5xl font-extrabold" style={{ color: brand.text }}>{brand.key}</h2>
+              <img
+                src={brand.key === "IRAT" ? imgOr("IRAT_LOGO") : brand.key === "Tinex" ? imgOr("TINEX_LOGO") : imgOr("ROBLEX_LOGO")}
+                alt={brand.key + " logo"}
+                className="h-20 md:h-28 mt-3 opacity-95"
+                onError={(e: any) => (e.currentTarget.src = PLACEHOLDER)}
+              />
             </div>
-            <Button onClick={onGo}>Ver más</Button>
-          </CardContent>
-        </Card>
-      </motion.div>
-    );
-
-    const ProductCard = ({p, onOpen, i}) => (
-      <motion.div initial={{opacity:0, scale:.98}} animate={{opacity:1, scale:1}} transition={{delay:0.05*i}}>
-        <Card className="hover:shadow-md transition">
-          <div className="h-72 md:h-80 rounded-t-2xl bg-white grid place-items-center overflow-hidden">
-            <img src={imgOr(p.image, PLACEHOLDER)} alt={p.name} className="object-contain h-full w-auto" onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
           </div>
+        </div>
+      </Card>
+
+      <div className="grid md:grid-cols-3 gap-4 mt-4">
+        <Card className="md:col-span-2">
           <CardContent>
-            <div className="text-xs text-neutral-500">{p.brand} · {p.category}</div>
-            <div className="font-semibold mt-1">{p.name}</div>
-            <div className="mt-2 flex flex-wrap gap-1">{p.usos.map(u=><span key={u} className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 border">{u}</span>)}</div>
-            <div className="mt-3 flex justify-between items-center">
-              <Button variant="outline" onClick={(e)=>{e.preventDefault();onOpen(p.id);}}>Ver producto</Button>
-              <Button href={"https://wa.me/541175245758?text="+encodeURIComponent(`Hola HRSA, consulta por ${p.name} (marca ${p.brand})`)} target="_blank">WhatsApp</Button>
-            </div>
+            <p className="text-neutral-700">{brand.key} ofrece soluciones de {cats.join(", ")}. Encontrá el producto ideal según tu uso y presentación.</p>
           </CardContent>
         </Card>
-      </motion.div>
-    );
+        <Card>
+          <CardContent>
+            <div className="font-semibold mb-2">Categorías</div>
+            <div className="flex flex-wrap gap-2">{cats.map((c) => (
+              <span key={c} className="px-3 py-1.5 rounded-full text-sm border">{c}</span>
+            ))}</div>
+          </CardContent>
+        </Card>
+      </div>
 
-    const Drawer = ({open, product, onClose}) => (
-      <AnimatePresence>
-        {open && (
-          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-50">
-            <div className="absolute inset-0 bg-black/40" onClick={onClose}></div>
-            <motion.div initial={{x:"100%"}} animate={{x:0}} exit={{x:"100%"}}
-              transition={{type:"spring", stiffness:260, damping:26}}
-              className="absolute right-0 top-0 h-full w-full sm:w-[480px] bg-white shadow-2xl overflow-y-auto">
-              <div className="p-4 border-b flex items-center justify-between">
-                <div className="font-semibold">{product.name}</div>
-                <button className="px-3 py-1 rounded-lg border" onClick={onClose}>Cerrar</button>
-              </div>
-              <div className="p-4 space-y-4">
-                <div className="h-64 md:h-80 rounded-xl bg-white grid place-items-center overflow-hidden">
-                  <img src={imgOr(product.image, PLACEHOLDER)} alt={product.name} className="object-contain h-full w-auto" onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
-                </div>
-                <div className="text-sm text-neutral-500">{product.brand} · {product.category}</div>
-                <p className="text-neutral-700">{product.desc}</p>
-                <div className="flex flex-wrap gap-2">
-                  {product.usos.map(u=><span key={u} className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">{u}</span>)}
-                  {product.presentaciones.map(pr=><span key={pr} className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">{pr}</span>)}
-                </div>
-                <div className="text-sm"><b>Rendimiento:</b> {product.rendimiento}</div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" href="#">Ficha técnica</Button>
-                  <Button variant="outline" href="#">HDS / MSDS</Button>
-                </div>
-                <div className="flex gap-2">
-                  <Button href={"https://wa.me/541175245758?text="+encodeURIComponent(`Hola HRSA, consulta por ${product.name} (marca ${product.brand})`)} target="_blank">Consultar</Button>
-                  <Button variant="outline" href="#Contacto">Formulario</Button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    );
-
-    const BrandScreen = ({brand, onOpen})=>{
-      const [q,setQ]=React.useState("");
-      const [fu,setFu]=React.useState([]);
-      const [fp,setFp]=React.useState([]);
-      const cats = uniq(PRODUCTS.filter(p=>p.brand===brand.key).map(p=>p.category));
-      const toggle=(v,arr,set)=>set(arr.includes(v)?arr.filter(x=>x!==v):[...arr,v]);
-
-      const list = PRODUCTS
-        .filter(p=>p.brand===brand.key)
-        .filter(p=>!q || p.name.toLowerCase().includes(q.toLowerCase()))
-        .filter(p=>!fu.length || fu.every(u=>p.usos.includes(u)))
-        .filter(p=>!fp.length || fp.every(pr=>p.presentaciones.includes(pr)));
-
-      return (
-        <motion.div initial={{opacity:0, y:12}} animate={{opacity:1, y:0}}>
-          <Card className="overflow-hidden">
-            <div className="h-48 md:h-64 relative" style={{background:brand.color}}>
-              <div className="absolute inset-0 flex items-center px-6 md:px-10">
-                <div>
-                  <div className="text-white/90 text-sm">Marca</div>
-                  <h2 className="text-3xl md:text-5xl font-extrabold" style={{color:brand.text}}>{brand.key}</h2>
-                  <img src={brand.key==='IRAT'?imgOr("IRAT_LOGO",PLACEHOLDER):brand.key==='Tinex'?imgOr("TINEX_LOGO",PLACEHOLDER):imgOr("ROBLEX_LOGO",PLACEHOLDER)}
-                       alt={brand.key+" logo"} className="h-20 md:h-28 mt-3 opacity-95"
-                       onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
-                </div>
-              </div>
+      <Card className="mt-4">
+        <CardContent>
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <div className="flex items-center gap-2 flex-1">
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar productos..." className="w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300" />
             </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {usosAll.map((u) => (
+                <button
+                  key={u}
+                  onClick={() => toggle(u, fu, setFu)}
+                  className={`px-3 py-1.5 rounded-full text-sm border ${fu.includes(u) ? "bg-neutral-900 text-white border-neutral-900" : "bg-white text-neutral-800 border-neutral-300 hover:bg-neutral-100"}`}
+                >
+                  {u}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {presAll.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => toggle(p, fp, setFp)}
+                  className={`px-3 py-1.5 rounded-full text-sm border ${fp.includes(p) ? "bg-neutral-900 text-white border-neutral-900" : "bg-white text-neutral-800 border-neutral-300 hover:bg-neutral-100"}`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+            {(fu.length || fp.length || q) && (
+              <Button variant="outline" onClick={(e) => { e.preventDefault(); setQ(""); setFu([]); setFp([]); }}>Limpiar</Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+        {list.map((p, i) => (
+          <ProductCard key={p.id} p={p} i={i} onOpen={onOpen} />
+        ))}
+        {!list.length && (
+          <Card className="col-span-full">
+            <CardContent>No hay productos que coincidan con los filtros.</CardContent>
           </Card>
+        )}
+      </div>
+    </div>
+  );
+};
 
-          <div className="grid md:grid-cols-3 gap-4 mt-4">
-            <Card className="md:col-span-2"><CardContent>
-              <p className="text-neutral-700">{brand.key} ofrece soluciones de {cats.join(", ")}. Encontrá el producto ideal según tu uso y presentación.</p>
-            </CardContent></Card>
-            <Card><CardContent>
-              <div className="font-semibold mb-2">Categorías</div>
-              <div className="flex flex-wrap gap-2">{cats.map(c=><span key={c} className="px-3 py-1.5 rounded-full text-sm border">{c}</span>)}</div>
-            </CardContent></Card>
-          </div>
+const Seguridad: React.FC = () => (
+  <div className="space-y-8 fade-in-slow">
+    <Card>
+      <div className="h-32 bg-neutral-900 text-white grid place-items-center text-2xl font-bold">Seguridad</div>
+    </Card>
+    <Card>
+      <CardContent>
+        <div className="overflow-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="text-left text-neutral-500">
+                <th className="py-2 pr-4">Producto</th>
+                <th className="py-2 pr-4">Marca</th>
+                <th className="py-2 pr-4">HDS</th>
+                <th className="py-2 pr-4">Ficha técnica</th>
+              </tr>
+            </thead>
+            <tbody>
+              {PRODUCTS.map((p) => (
+                <tr key={p.id} className="border-t">
+                  <td className="py-2 pr-4">{p.name}</td>
+                  <td className="py-2 pr-4">{p.brand}</td>
+                  <td className="py-2 pr-4 text-blue-600"><a href="#">PDF</a></td>
+                  <td className="py-2 pr-4 text-blue-600"><a href="#">PDF</a></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+);
 
-          <Card className="mt-4"><CardContent>
-            <div className="flex flex-col md:flex-row md:items-center gap-3">
-              <div className="flex items-center gap-2 flex-1">
-                <input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Buscar productos..."
-                       className="w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300"/>
+const Contacto: React.FC = () => (
+  <section id="Contacto" className="space-y-4 fade-in">
+    <h2 className="text-xl md:text-2xl font-bold">Contacto</h2>
+    <Card>
+      <CardContent>
+        <div className="grid md:grid-cols-3 gap-4">
+          <div className="md:col-span-2">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                alert("¡Consulta enviada! (demo)");
+              }}
+              className="space-y-3"
+            >
+              <div className="grid sm:grid-cols-2 gap-3">
+                <label className="text-sm block">
+                  <span className="text-neutral-700">Nombre</span>
+                  <input required className="mt-1 w-full border rounded-xl px-3 py-2" />
+                </label>
+                <label className="text-sm block">
+                  <span className="text-neutral-700">Email</span>
+                  <input type="email" required className="mt-1 w-full border rounded-xl px-3 py-2" />
+                </label>
+                <label className="text-sm block sm:col-span-2">
+                  <span className="text-neutral-700">Mensaje</span>
+                  <textarea required className="mt-1 w-full border rounded-xl px-3 py-2 h-28"></textarea>
+                </label>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {usosAll.map(u=><button key={u} onClick={()=>toggle(u,fu,setFu)}
-                  className={"px-3 py-1.5 rounded-full text-sm border "+(fu.includes(u)?"bg-neutral-900 text-white border-neutral-900":"bg-white text-neutral-800 border-neutral-300 hover:bg-neutral-100")}>{u}</button>)}
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {presAll.map(p=><button key={p} onClick={()=>toggle(p,fp,setFp)}
-                  className={"px-3 py-1.5 rounded-full text-sm border "+(fp.includes(p)?"bg-neutral-900 text-white border-neutral-900":"bg-white text-neutral-800 border-neutral-300 hover:bg-neutral-100")}>{p}</button>)}
-              </div>
-              {(fu.length||fp.length||q) && <Button variant="outline" onClick={(e)=>{e.preventDefault();setQ("");setFu([]);setFp([]);}}>Limpiar</Button>}
-            </div>
-          </CardContent></Card>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-            {list.map((p,i)=><ProductCard key={p.id} p={p} i={i} onOpen={onOpen}/>)}
-            {!list.length && <Card className="col-span-full"><CardContent>No hay productos que coincidan con los filtros.</CardContent></Card>}
+              <button className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-sm bg-[#F07B39] text-white">Enviar</button>
+            </form>
           </div>
-        </motion.div>
-      );
-    };
-
-    const Seguridad = () => (
-      <motion.div initial={{opacity:0, y:12}} animate={{opacity:1, y:0}} className="space-y-8">
-        <Card><div className="h-32 bg-neutral-900 text-white grid place-items-center text-2xl font-bold">Seguridad</div></Card>
-        <Card><CardContent>
-          <div className="overflow-auto">
-            <table className="min-w-full text-sm">
-              <thead><tr className="text-left text-neutral-500">
-                <th className="py-2 pr-4">Producto</th><th className="py-2 pr-4">Marca</th><th className="py-2 pr-4">HDS</th><th className="py-2 pr-4">Ficha técnica</th>
-              </tr></thead>
-              <tbody>
-                {PRODUCTS.map(p=>(
-                  <tr key={p.id} className="border-t">
-                    <td className="py-2 pr-4">{p.name}</td>
-                    <td className="py-2 pr-4">{p.brand}</td>
-                    <td className="py-2 pr-4 text-blue-600"><a href="#">PDF</a></td>
-                    <td className="py-2 pr-4 text-blue-600"><a href="#">PDF</a></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-2 text-sm text-neutral-700">
+            <div><b>Email</b>: info@hidraulicabande.com.ar</div>
+            <div><b>Tel</b>: 11 7524-5758</div>
+            <div><b>Horario</b>: Lun–Vie 8–13 / 14–17 · Sáb 8–12:30</div>
+            <div><b>Dirección</b>: Fray Cayetano Rodriguez 30, Los Polvorines</div>
           </div>
-        </CardContent></Card>
-      </motion.div>
-    );
+        </div>
+      </CardContent>
+    </Card>
+  </section>
+);
 
-    const Contacto = () => (
-      <section id="Contacto" className="space-y-4">
-        <h2 className="text-xl md:text-2xl font-bold">Contacto</h2>
-        <Card><CardContent>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <form onSubmit={(e)=>{e.preventDefault();alert("¡Consulta enviada! (demo)");}} className="space-y-3">
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <label className="text-sm block"><span className="text-neutral-700">Nombre</span><input required className="mt-1 w-full border rounded-xl px-3 py-2"/></label>
-                  <label className="text-sm block"><span className="text-neutral-700">Email</span><input type="email" required className="mt-1 w-full border rounded-xl px-3 py-2"/></label>
-                  <label className="text-sm block sm:col-span-2"><span className="text-neutral-700">Mensaje</span><textarea required className="mt-1 w-full border rounded-xl px-3 py-2 h-28"></textarea></label>
-                </div>
-                <button className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-sm bg-[#F07B39] text-white">Enviar</button>
-              </form>
-            </div>
-            <div className="space-y-2 text-sm text-neutral-700">
-              <div><b>Email</b>: info@hidraulicabande.com.ar</div>
-              <div><b>Tel</b>: 11 7524-5758</div>
-              <div><b>Horario</b>: Lun–Vie 8–13 / 14–17 · Sáb 8–12:30</div>
-              <div><b>Dirección</b>: Fray Cayetano Rodriguez 30, Los Polvorines</div>
-            </div>
-          </div>
-        </CardContent></Card>
-      </section>
-    );
+const MainApp: React.FC = () => {
+  const [route, setRoute] = React.useState("home");
+  const [openId, setOpenId] = React.useState<string | null>(null);
+  const destacados = PRODUCTS.filter((p) => p.destacados).slice(0, 6);
 
-    const App = () => {
-      const [route,setRoute]=React.useState("home");
-      const [openId,setOpenId]=React.useState(null);
-      const product = openId?PRODUCTS.find(p=>p.id===openId):null;
+  return (
+    <div className="min-h-screen" style={{ fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" }}>
+      {/* Global styles for animations and brand title */}
+      <style>{`
+        html,body{background:#fafafa}
+        .fade-in{animation:fadeIn .5s ease both}
+        .fade-in-slow{animation:fadeIn .7s ease both}
+        .fade-up{animation:fadeUp .6s ease both}
+        .delay-1{animation-delay:.08s}
+        .delay-2{animation-delay:.16s}
+        .delay-3{animation-delay:.24s}
+        .slide-in-right{animation:slideInRight .35s ease both}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
+        .brand-two-lines{line-height:1.05;max-width:10rem;word-break:break-word;white-space:normal}
+      `}</style>
 
-      const destacados = PRODUCTS.filter(p=>p.destacados).slice(0,6);
+      <Header onNav={setRoute} active={route} />
 
-      return (
-        <div className="min-h-screen" style={{fontFamily:'system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif'}}>
-          <Header onNav={setRoute} active={route}/>
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-8 space-y-10">
-            {route==="home" && (
-              <>
-                <motion.div initial={{opacity:0, y:12}} animate={{opacity:1, y:0}}>
-                  <Card className="overflow-hidden">
-                    <div className="relative">
-                      <div className="h-[42vh] md:h-[56vh] bg-gradient-to-r from-neutral-800 to-neutral-700"></div>
-                      <div className="absolute inset-0 bg-black/30"></div>
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="px-6 md:px-10">
-                          <h1 className="text-3xl md:text-5xl font-extrabold text-white">Innovación y calidad desde 1970</h1>
-                          <p className="text-white/90 mt-3 text-base md:text-lg">Removedores, thinners y disolventes para la industria, la obra y el hogar.</p>
-                          <div className="mt-6 flex gap-3">
-                            <Button onClick={(e)=>{e.preventDefault();setRoute("IRAT");}}>Descubrir marcas</Button>
-                            <Button variant="outline" href="#Contacto">Contacto</Button>
-                          </div>
-                        </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-8 space-y-10">
+        {route === "home" && (
+          <>
+            <div className="fade-in">
+              <Card className="overflow-hidden">
+                <div className="relative">
+                  <div className="h-[42vh] md:h-[56vh] bg-gradient-to-r from-neutral-800 to-neutral-700"></div>
+                  <div className="absolute inset-0 bg-black/30"></div>
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="px-6 md:px-10">
+                      <h1 className="text-3xl md:text-5xl font-extrabold text-white">Innovación y calidad desde 1970</h1>
+                      <p className="text-white/90 mt-3 text-base md:text-lg">Removedores, thinners y disolventes para la industria, la obra y el hogar.</p>
+                      <div className="mt-6 flex gap-3">
+                        <Button onClick={(e) => { e.preventDefault(); setRoute("IRAT"); }}>Descubrir marcas</Button>
+                        <Button variant="outline" href="#Contacto">Contacto</Button>
                       </div>
                     </div>
-                  </Card>
-                </motion.div>
-
-                <section className="space-y-4">
-                  <h2 className="text-xl md:text-2xl font-bold">Nuestras marcas</h2>
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <BrandCard i={0} brand={BRAND.IRAT}   tagline="Soluciones de alto desempeño" onGo={(e)=>{e.preventDefault();setRoute("IRAT");}}/>
-                    <BrandCard i={1} brand={BRAND.Tinex}  tagline="Eficiencia para cada aplicación" onGo={(e)=>{e.preventDefault();setRoute("Tinex");}}/>
-                    <BrandCard i={2} brand={BRAND.Roblex} tagline="Protección y acabado profesional" onGo={(e)=>{e.preventDefault();setRoute("Roblex");}}/>
                   </div>
-                </section>
+                </div>
+              </Card>
+            </div>
 
-                <section className="space-y-4">
-                  <h2 className="text-xl md:text-2xl font-bold">Productos destacados</h2>
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {destacados.map((p,i)=><ProductCard key={p.id} p={p} i={i} onOpen={setOpenId}/>)}
-                  </div>
-                </section>
-              </>
-            )}
+            <section className="space-y-4">
+              <h2 className="text-xl md:text-2xl font-bold">Nuestras marcas</h2>
+              <div className="grid md:grid-cols-3 gap-4">
+                <BrandCard i={0} brand={BRAND.IRAT} tagline="Soluciones de alto desempeño" onGo={() => setRoute("IRAT")} />
+                <BrandCard i={1} brand={BRAND.Tinex} tagline="Eficiencia para cada aplicación" onGo={() => setRoute("Tinex")} />
+                <BrandCard i={2} brand={BRAND.Roblex} tagline="Protección y acabado profesional" onGo={() => setRoute("Roblex")} />
+              </div>
+            </section>
 
-            {route==="IRAT"   && <BrandScreen brand={BRAND.IRAT}   onOpen={setOpenId}/>}
-            {route==="Tinex"  && <BrandScreen brand={BRAND.Tinex}  onOpen={setOpenId}/>}
-            {route==="Roblex" && <BrandScreen brand={BRAND.Roblex} onOpen={setOpenId}/>}
+            <section className="space-y-4">
+              <h2 className="text-xl md:text-2xl font-bold">Productos destacados</h2>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {destacados.map((p, i) => (
+                  <ProductCard key={p.id} p={p} i={i} onOpen={setOpenId} />
+                ))}
+              </div>
+            </section>
+          </>
+        )}
 
-            {route==="seguridad" && <Seguridad/>}
-            <Contacto/>
-          </main>
+        {route === "IRAT" && <BrandScreen brand={BRAND.IRAT} onOpen={setOpenId} />}
+        {route === "Tinex" && <BrandScreen brand={BRAND.Tinex} onOpen={setOpenId} />}
+        {route === "Roblex" && <BrandScreen brand={BRAND.Roblex} onOpen={setOpenId} />}
 
-          <Drawer open={!!product} product={product||{}} onClose={()=>setOpenId(null)}/>
-          <a href="https://wa.me/541175245758?text=Hola%20HRSA%2C%20necesito%20asesoramiento" target="_blank"
-             className="fixed bottom-4 right-4 md:bottom-6 md:right-6 w-12 h-12 rounded-full bg-green-500 grid place-items-center shadow-lg text-white">WA</a>
+        {route === "seguridad" && <Seguridad />}
+        <Contacto />
+      </main>
 
-          <footer className="border-t bg-white mt-16">
-            <div className="py-4 text-center text-xs text-neutral-500">© {new Date().getFullYear()} HRSA. Todos los derechos reservados.</div>
-          </footer>
-        </div>
-      );
-    };
+      <Drawer openId={openId} onClose={() => setOpenId(null)} />
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+      <a
+        href="https://wa.me/541175245758?text=Hola%20HRSA%2C%20necesito%20asesoramiento"
+        target="_blank"
+        className="fixed bottom-4 right-4 md:bottom-6 md:right-6 w-12 h-12 rounded-full bg-green-500 grid place-items-center shadow-lg text-white"
+        rel="noreferrer"
+      >
+        WA
+      </a>
 
-    // Smoke tests
-    const _assert=(c,m)=>c?console.info("[PASS]",m):console.error("[FAIL]",m);
-    _assert(Array.isArray(PRODUCTS)&&PRODUCTS.length>=6,"Productos cargados");
-    _assert(typeof PLACEHOLDER==="string" && PLACEHOLDER.startsWith("data:image/svg+xml;base64,"),"Placeholder válido");
-    _assert(["IRAT","Tinex","Roblex"].every(b=>PRODUCTS.some(p=>p.brand===b)),"Todas las marcas presentes");
-  </script>
-</body>
-</html>
+      <footer className="border-t bg-white mt-16">
+        <div className="py-4 text-center text-xs text-neutral-500">© {new Date().getFullYear()} HRSA. Todos los derechos reservados.</div>
+      </footer>
+    </div>
+  );
+};
+
+export default MainApp;
+
+// ===== Lightweight smoke tests (run in browser) =====
+if (typeof window !== "undefined") {
+  const assert = (cond: boolean, msg: string) => (cond ? console.info("[PASS]", msg) : console.error("[FAIL]", msg));
+  assert(Array.isArray(PRODUCTS) && PRODUCTS.length >= 6, "Productos cargados");
+  assert(typeof PLACEHOLDER === "string" && PLACEHOLDER.startsWith("data:image/svg+xml"), "Placeholder válido");
+  assert(["IRAT", "Tinex", "Roblex"].every((b) => PRODUCTS.some((p) => p.brand === (b as any))), "Todas las marcas presentes");
+  // Nuevo test: el helper imgOr debe retornar un data URI cuando la key no existe
+  assert((imgOr("NO_EXISTE") || "").startsWith("data:image/svg+xml"), "Fallback a placeholder para imagen faltante");
+}
