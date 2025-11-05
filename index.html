@@ -1,483 +1,481 @@
-import React from "react";
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HRSA — Prototype</title>
 
-/**
- * HRSA — Preview App (Interactive Prototype)
- * - Single-file React component (no external HTML wrapper)
- * - No framer-motion; animations via small CSS keyframes
- * - Tailwind classes assumed to be available in the canvas preview
- * - Images are loaded from relative paths (same folder as this file)
- *   Put these files next to index.html on GitHub Pages:
- *   HRSAMarca.png, IRATMARCA.png, ROBLEXMARCA.png, TinexCian.png,
- *   BrickBritishx1.png, DM02x1.png, HidroCaobax1.png, N4x1.png,
- *   TinexSYBx18.png, TinexSYBx920.png
- */
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-// Safe inline SVG placeholder (UTF-8 encoded, avoids btoa/CSP issues)
-const PLACEHOLDER =
-  "data:image/svg+xml;utf8," +
-  encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='640' height='400'>
-      <rect width='100%' height='100%' fill='#e5e7eb'/>
-      <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
-            font-family='Arial, Helvetica, sans-serif' font-size='22' fill='#6b7280'>Sin imagen</text>
-    </svg>`
-  );
+  <!-- React 18 + ReactDOM (UMD) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 
-// Relativos a la raíz donde publiques el HTML (GitHub Pages)
-const ASSETS: Record<string, string> = {
-  HRSA_MARCA: "HRSAMarca.png",
-  IRAT_LOGO: "IRATMARCA.png",
-  ROBLEX_LOGO: "ROBLEXMARCA.png",
-  TINEX_LOGO: "TinexCian.png",
-  ROBLEX_BRIC: "BrickBritishx1.png",
-  IRAT_DM02: "DM02x1.png",
-  ROBLEX_HIDRO_CA: "HidroCaobax1.png",
-  IRAT_N4: "N4x1.png",
-  TINEX_20L: "TinexSYBx18.png",
-  TINEX_920: "TinexSYBx920.png",
-};
-const getAsset = (k: string) => ASSETS[k] || "";
-const imgOr = (key: string) => getAsset(key) || PLACEHOLDER;
+  <!-- Babel Standalone para compilar JSX en runtime -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-// Datos
-const BRAND = {
-  IRAT:   { key: "IRAT",   color: "#000000", text: "#ffffff" },
-  Tinex:  { key: "Tinex",  color: "#00AEEF", text: "#ffffff" },
-  Roblex: { key: "Roblex", color: "#004F3D", text: "#ffffff" },
-};
+  <style>
+    /* micro animaciones para reemplazar framer-motion */
+    .fade-in { animation: fadeIn .35s ease-out both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: translateY(0) } }
+  </style>
+</head>
+<body class="bg-neutral-50 text-neutral-900">
+  <div id="root"></div>
 
-type Product = {
-  id: string; brand: "IRAT" | "Tinex" | "Roblex"; name: string; category: string;
-  usos: string[]; presentaciones: string[]; rendimiento: string; seguridad: string[];
-  desc: string; destacados: boolean; downloads: { ficha: boolean; hds: boolean };
-  image: keyof typeof ASSETS | string;
-};
+  <!-- App -->
+  <script type="text/babel">
+    const { useMemo, useState, useEffect } = React;
 
-const PRODUCTS: Product[] = [
-  { id:"irat-01", brand:"IRAT",   name:"IRAT Disolve Especial N°4", category:"Disolventes", usos:["industria","obra"], presentaciones:["1 L"], rendimiento:"—", seguridad:["ghs02","ghs07"], desc:"Disolve especial para esmaltes horneables.", destacados:true, downloads:{ficha:true,hds:true}, image:"IRAT_N4" },
-  { id:"irat-02", brand:"IRAT",   name:"IRAT Thinner Universal DM-02", category:"Thinners",   usos:["industria","automotriz"], presentaciones:["1 L","20 L"], rendimiento:"—", seguridad:["ghs02"], desc:"Thinner para esmaltes sintéticos.", destacados:true, downloads:{ficha:true,hds:true}, image:"IRAT_DM02" },
-  { id:"tinex-01", brand:"Tinex", name:"Tinex 20L", category:"Thinners", usos:["industria","madera"], presentaciones:["20 L"], rendimiento:"—", seguridad:["ghs02"], desc:"Para limpieza y dilución de pinturas sintéticas.", destacados:true, downloads:{ficha:true,hds:true}, image:"TINEX_20L" },
-  { id:"tinex-02", brand:"Tinex", name:"Tinex 920cc", category:"Disolventes", usos:["obra","hogar"], presentaciones:["920 cc"], rendimiento:"—", seguridad:["ghs07"], desc:"Limpieza y dilución doméstica/profesional.", destacados:false, downloads:{ficha:true,hds:true}, image:"TINEX_920" },
-  { id:"roblex-01", brand:"Roblex", name:"Roblex BRIC Ladrillos", category:"Pinturas", usos:["obra"], presentaciones:["1 L"], rendimiento:"—", seguridad:["ghs02"], desc:"Recubrimiento protector para ladrillos.", destacados:true, downloads:{ficha:true,hds:true}, image:"ROBLEX_BRIC" },
-  { id:"roblex-02", brand:"Roblex", name:"Roblex Hidrolaca Caoba", category:"Barnices", usos:["madera","hogar"], presentaciones:["1 L"], rendimiento:"12–16 m²/L", seguridad:["ghs07"], desc:"Laca para maderas flexible y perdurable.", destacados:true, downloads:{ficha:true,hds:true}, image:"ROBLEX_HIDRO_CA" },
-];
+    // ===== Placeholder inline (termina en ; para evitar errores)
+    const PLACEHOLDER =
+      "data:image/svg+xml;utf8," +
+      encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400"><rect width="100%" height="100%" fill="#e5e7eb"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#6b7280">Sin imagen</text></svg>'
+      );
 
-const uniq = (a: string[]) => Array.from(new Set(a));
-const usosAll = uniq(PRODUCTS.flatMap((p) => p.usos));
-const presAll = uniq(PRODUCTS.flatMap((p) => p.presentaciones));
+    // ===== Assets (rutas relativas al index.html en GH Pages)
+    const ASSETS = {
+      HRSA_MARCA: "HRSAMarca.png",
+      IRAT_LOGO: "IRATMARCA.png",
+      ROBLEX_LOGO: "ROBLEXMARCA.png",
+      TINEX_LOGO: "TinexCian.png",
+      ROBLEX_BRIC: "BrickBritishx1.png",
+      IRAT_DM02: "DM02x1.png",
+      ROBLEX_HIDRO_CA: "HidroCaobax1.png",
+      IRAT_N4: "N4x1.png",
+      TINEX_20L: "TinexSYBx18.png",
+      TINEX_920: "TinexSYBx920.png",
+    };
 
-// UI Primitives
-const Card: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ className = "", children }) => (
-  <div className={`rounded-2xl border border-neutral-200 bg-white shadow-sm ${className}`}>{children}</div>
-);
-const CardContent: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ className = "", children }) => (
-  <div className={`p-4 ${className}`}>{children}</div>
-);
-const Button: React.FC<React.PropsWithChildren<{ className?: string; variant?: "solid" | "outline"; href?: string; target?: string; onClick?: (e: any) => void }>> = ({ className = "", variant = "solid", href = "#", target, onClick, children }) => (
-  <a
-    href={href}
-    target={target}
-    onClick={onClick}
-    className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition ${
-      variant === "outline"
-        ? "border border-neutral-300 text-neutral-800 bg-white hover:bg-neutral-50"
-        : "bg-[#F07B39] text-white hover:brightness-110"
-    } ${className}`}
-  >
-    {children}
-  </a>
-);
+    const getAsset = (k) => ASSETS[k] || "";
+    const imgOr = (key) => getAsset(key) || PLACEHOLDER;
 
-const Header: React.FC<{ onNav: (r: string) => void; active: string }> = ({ onNav, active }) => (
-  <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 grid grid-cols-2 md:grid-cols-12 items-center gap-3">
-      <div className="col-span-6 md:col-span-4 flex items-center gap-3">
-        <img src={imgOr("HRSA_MARCA")} alt="HRSA" className="h-10 md:h-12 w-auto" onError={(e: any) => (e.currentTarget.src = PLACEHOLDER)} />
-        <span className="brand-two-lines font-medium text-sm hidden sm:block">
-          Hugo Rodríguez<br />y Cía. S.A.
-        </span>
-      </div>
-      <nav className="col-span-6 md:col-span-8 flex justify-end gap-2 sm:gap-3 overflow-x-auto">
-        {["home", "IRAT", "Tinex", "Roblex", "seguridad", "contacto"].map((id) => (
-          <a
-            key={id}
-            className={`px-3 py-2 rounded-lg border ${active === id ? "bg-[#F07B39] text-white border-[#F07B39]" : ""}`}
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              onNav(id);
-              if (id === "contacto") {
-                const el = document.getElementById("Contacto");
-                el?.scrollIntoView({ behavior: "smooth" });
-              }
-            }}
-          >
-            {id === "home" ? "Inicio" : id[0].toUpperCase() + id.slice(1)}
-          </a>
-        ))}
-      </nav>
-    </div>
-  </div>
-);
+    // ===== Marcas
+    const BRAND = {
+      IRAT:   { key: "IRAT",   color: "#000000", accent: "#F07B39", text: "#ffffff", logo: "IRAT_LOGO" },
+      Tinex:  { key: "Tinex",  color: "#00AEEF", accent: "#00AEEF", text: "#ffffff", logo: "TINEX_LOGO" },
+      Roblex: { key: "Roblex", color: "#004F3D", accent: "#367A64", text: "#ffffff", logo: "ROBLEX_LOGO" },
+    };
 
-const BrandCard: React.FC<{ brand: any; tagline: string; onGo: () => void; i: number }> = ({ brand, tagline, onGo, i }) => (
-  <div className={`fade-up ${["", "delay-1", "delay-2"][i] || ""}`}>
-    <Card className="overflow-hidden">
-      <div className="h-32 relative overflow-hidden grid place-items-center" style={{ background: brand.color }}>
-        <img
-          src={brand.key === "IRAT" ? imgOr("IRAT_LOGO") : brand.key === "Tinex" ? imgOr("TINEX_LOGO") : imgOr("ROBLEX_LOGO")}
-          alt={brand.key + " logo"}
-          className="h-16 md:h-20 opacity-90"
-          onError={(e: any) => (e.currentTarget.src = PLACEHOLDER)}
-        />
-      </div>
-      <CardContent className="flex items-center justify-between">
-        <div>
-          <div className="text-lg font-bold">{brand.key}</div>
-          <div className="text-sm text-neutral-600">{tagline}</div>
+    // ===== Productos
+    const PRODUCTS = [
+      { id: "irat-01", brand: "IRAT",   name: "IRAT Disolve Especial N°4", category: "Disolventes", usos: ["industria","obra"], presentaciones: ["1 L"],  rendimiento: "—",            seguridad: ["ghs02","ghs07"], desc: "Disolve especial para esmaltes horneables.", destacados: true, downloads: { ficha: true, hds: true }, image: "IRAT_N4" },
+      { id: "irat-02", brand: "IRAT",   name: "IRAT Thinner Universal DM-02", category: "Thinners",   usos: ["industria","automotriz"], presentaciones: ["1 L","20 L"], rendimiento: "—", seguridad: ["ghs02"], desc: "Thinner para esmaltes sintéticos.", destacados: true, downloads: { ficha: true, hds: true }, image: "IRAT_DM02" },
+      { id: "tinex-01", brand: "Tinex", name: "Tinex 20L",                  category: "Thinners",   usos: ["industria","madera"], presentaciones: ["20 L"], rendimiento: "—", seguridad: ["ghs02"], desc: "Para limpieza y dilución de pinturas sintéticas.", destacados: true, downloads: { ficha: true, hds: true }, image: "TINEX_20L" },
+      { id: "tinex-02", brand: "Tinex", name: "Tinex 920cc",                category: "Disolventes",usos: ["obra","hogar"], presentaciones: ["920 cc"], rendimiento: "—",    seguridad: ["ghs07"], desc: "Limpieza y dilución doméstica/pro.", destacados: false, downloads: { ficha: true, hds: true }, image: "TINEX_920" },
+      { id: "roblex-01", brand: "Roblex", name: "Roblex BRIC Ladrillos",    category: "Pinturas",   usos: ["obra"],                 presentaciones: ["1 L"], rendimiento: "—",    seguridad: ["ghs02"], desc: "Recubrimiento protector para ladrillos.", destacados: true, downloads: { ficha: true, hds: true }, image: "ROBLEX_BRIC" },
+      { id: "roblex-02", brand: "Roblex", name: "Roblex Hidrolaca Caoba",   category: "Barnices",   usos: ["madera","hogar"],       presentaciones: ["1 L"], rendimiento: "12–16 m²/L", seguridad: ["ghs07"], desc: "Laca para maderas flexible y perdurable.", destacados: true, downloads: { ficha: true, hds: true }, image: "ROBLEX_HIDRO_CA" },
+    ];
+
+    const uniq = (arr) => Array.from(new Set(arr));
+    const allUsos = uniq(PRODUCTS.flatMap(p => p.usos));
+    const allPres = uniq(PRODUCTS.flatMap(p => p.presentaciones));
+
+    const NAV = [
+      { id: "home", label: "Inicio" },
+      { id: "irat", label: "IRAT" },
+      { id: "tinex", label: "Tinex" },
+      { id: "roblex", label: "Roblex" },
+      { id: "seguridad", label: "Seguridad" },
+      { id: "contacto", label: "Contacto" },
+    ];
+
+    // -------- UI
+    const Button = ({ className="", children, onClick, as="button", href, target, variant="default", type }) => {
+      const base = "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition active:scale-[.98]";
+      const variants = {
+        default: "bg-[#F07B39] text-white hover:brightness-110",
+        outline: "border border-neutral-300 text-neutral-800 bg-white hover:bg-neutral-50",
+        ghost: "text-neutral-700 hover:bg-neutral-100",
+      };
+      const cls = base + " " + (variants[variant] || "") + " " + className;
+      if (as === "a") return <a className={cls} href={href} target={target} rel={target==="_blank"?"noopener":undefined}>{children}</a>;
+      return <button className={cls} onClick={onClick} type={type}>{children}</button>;
+    };
+
+    const Card = ({ className="", children }) => <div className={"rounded-2xl border border-neutral-200 bg-white shadow-sm " + className}>{children}</div>;
+    const CardContent = ({ className="", children }) => <div className={"p-4 "+className}>{children}</div>;
+    const Chip = ({ selected, onClick, children }) =>
+      <button onClick={onClick} className={"px-3 py-1.5 rounded-full text-sm border transition " + (selected ? "bg-neutral-900 text-white border-neutral-900" : "bg-white text-neutral-800 border-neutral-300 hover:bg-neutral-100")}>{children}</button>;
+
+    // -------- App
+    function App(){
+      const [route, setRoute] = useState("home");
+      const [productOpen, setProductOpen] = useState(null);
+      const [search, setSearch] = useState("");
+      const [fUso, setFUso] = useState([]);
+      const [fPres, setFPres] = useState([]);
+
+      const goto = (id) => {
+        if(id==="contacto"){
+          const el = document.getElementById("contacto-section");
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+        setRoute(id); setSearch(""); setFUso([]); setFPres([]); setProductOpen(null);
+      };
+
+      return (
+        <div className="min-h-screen">
+          <Header onNav={goto} active={route} />
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pb-16">
+            {route==="home"      && <ScreenHome onViewBrands={()=>goto("irat")} onOpenProduct={setProductOpen} />}
+            {route==="irat"      && <ScreenBrand brand={BRAND.IRAT}   onOpenProduct={setProductOpen} search={search} setSearch={setSearch} fUso={fUso} setFUso={setFUso} fPres={fPres} setFPres={setFPres} />}
+            {route==="tinex"     && <ScreenBrand brand={BRAND.Tinex}  onOpenProduct={setProductOpen} search={search} setSearch={setSearch} fUso={fUso} setFUso={setFUso} fPres={fPres} setFPres={setFPres} />}
+            {route==="roblex"    && <ScreenBrand brand={BRAND.Roblex} onOpenProduct={setProductOpen} search={search} setSearch={setSearch} fUso={fUso} setFUso={setFUso} fPres={fPres} setFPres={setFPres} />}
+            {route==="seguridad" && <ScreenSeguridad/>}
+          </main>
+          <GlobalContact/>
+          <ProductDrawer openId={productOpen} onClose={()=>setProductOpen(null)} />
+          <WhatsAppFab/>
+          <Footer onNav={goto}/>
         </div>
-        <Button onClick={(e) => { e.preventDefault(); onGo(); }}>Ver más</Button>
-      </CardContent>
-    </Card>
-  </div>
-);
+      );
+    }
 
-const ProductCard: React.FC<{ p: Product; onOpen: (id: string) => void; i: number }> = ({ p, onOpen, i }) => (
-  <div className={`fade-in ${["", "delay-1", "delay-2"][i % 3] || ""}`}>
-    <Card className="hover:shadow-md transition">
-      <div className="h-64 md:h-72 rounded-t-2xl bg-white grid place-items-center overflow-hidden p-4">
-        <img src={imgOr(p.image as string)} alt={p.name} className="object-contain max-h-56 md:max-h-64 w-auto" onError={(e: any) => (e.currentTarget.src = PLACEHOLDER)} />
-      </div>
-      <CardContent>
-        <div className="text-xs text-neutral-500">{p.brand} · {p.category}</div>
-        <div className="font-semibold mt-1">{p.name}</div>
-        <div className="mt-2 flex flex-wrap gap-1">{p.usos.map((u) => (
-          <span key={u} className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 border">{u}</span>
-        ))}</div>
-        <div className="mt-3 flex justify-between items-center">
-          <Button variant="outline" onClick={(e) => { e.preventDefault(); onOpen(p.id); }}>Ver producto</Button>
-          <Button href={`https://wa.me/541175245758?text=${encodeURIComponent(`Hola HRSA, consulta por ${p.name} (marca ${p.brand})`)}`} target="_blank">WhatsApp</Button>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
-);
-
-const Drawer: React.FC<{ openId: string | null; onClose: () => void }> = ({ openId, onClose }) => {
-  const p = openId ? PRODUCTS.find((x) => x.id === openId) : null;
-  if (!p) return null;
-  return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose}></div>
-      <div className="absolute right-0 top-0 h-full w-full sm:w-[480px] bg-white shadow-2xl overflow-y-auto slide-in-right">
-        <div className="p-4 border-b flex items-center justify-between">
-          <div className="font-semibold">{p.name}</div>
-          <button className="px-3 py-1 rounded-lg border" onClick={onClose}>Cerrar</button>
-        </div>
-        <div className="p-4 space-y-4">
-          <div className="h-64 md:h-72 rounded-xl bg-white grid place-items-center overflow-hidden p-4">
-            <img src={imgOr(p.image as string)} alt={p.name} className="object-contain max-h-56 md:max-h-64 w-auto" onError={(e: any) => (e.currentTarget.src = PLACEHOLDER)} />
-          </div>
-          <div className="text-sm text-neutral-500">{p.brand} · {p.category}</div>
-          <p className="text-neutral-700">{p.desc}</p>
-          <div className="flex flex-wrap gap-2">
-            {p.usos.map((u) => (
-              <span key={u} className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">{u}</span>
-            ))}
-            {p.presentaciones.map((pr) => (
-              <span key={pr} className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">{pr}</span>
-            ))}
-          </div>
-          <div className="text-sm"><b>Rendimiento:</b> {p.rendimiento}</div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" href="#">Ficha técnica</Button>
-            <Button variant="outline" href="#">HDS / MSDS</Button>
-          </div>
-          <div className="flex gap-2">
-            <Button href={`https://wa.me/541175245758?text=${encodeURIComponent(`Hola HRSA, consulta por ${p.name} (marca ${p.brand})`)}`} target="_blank">Consultar</Button>
-            <Button variant="outline" href="#Contacto">Formulario</Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const BrandScreen: React.FC<{ brand: any; onOpen: (id: string) => void }> = ({ brand, onOpen }) => {
-  const [q, setQ] = React.useState("");
-  const [fu, setFu] = React.useState<string[]>([]);
-  const [fp, setFp] = React.useState<string[]>([]);
-  const cats = uniq(PRODUCTS.filter((p) => p.brand === brand.key).map((p) => p.category));
-  const toggle = (v: string, arr: string[], set: (x: string[]) => void) => set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
-
-  const list = PRODUCTS
-    .filter((p) => p.brand === brand.key)
-    .filter((p) => !q || p.name.toLowerCase().includes(q.toLowerCase()))
-    .filter((p) => !fu.length || fu.every((u) => p.usos.includes(u)))
-    .filter((p) => !fp.length || fp.every((pr) => p.presentaciones.includes(pr)));
-
-  return (
-    <div className="fade-in-slow">
-      <Card className="overflow-hidden">
-        <div className="h-48 md:h-64 relative" style={{ background: brand.color }}>
-          <div className="absolute inset-0 flex items-center px-6 md:px-10">
-            <div>
-              <div className="text-white/90 text-sm">Marca</div>
-              <h2 className="text-3xl md:text-5xl font-extrabold" style={{ color: brand.text }}>{brand.key}</h2>
-              <img
-                src={brand.key === "IRAT" ? imgOr("IRAT_LOGO") : brand.key === "Tinex" ? imgOr("TINEX_LOGO") : imgOr("ROBLEX_LOGO")}
-                alt={brand.key + " logo"}
-                className="h-20 md:h-28 mt-3 opacity-95"
-                onError={(e: any) => (e.currentTarget.src = PLACEHOLDER)}
-              />
+    function Header({ onNav, active }) {
+      return (
+        <div className="sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white/95 border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 grid grid-cols-2 md:grid-cols-12 items-center gap-3">
+            <div className="col-span-6 md:col-span-3 flex items-center gap-3">
+              <img src={imgOr("HRSA_MARCA")} alt="HRSA" className="h-12 md:h-14 w-auto" onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
+              <span className="font-semibold hidden sm:block leading-tight">Hugo Rodríguez<br/>y Cía. S.A.</span>
             </div>
-          </div>
-        </div>
-      </Card>
-
-      <div className="grid md:grid-cols-3 gap-4 mt-4">
-        <Card className="md:col-span-2">
-          <CardContent>
-            <p className="text-neutral-700">{brand.key} ofrece soluciones de {cats.join(", ")}. Encontrá el producto ideal según tu uso y presentación.</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <div className="font-semibold mb-2">Categorías</div>
-            <div className="flex flex-wrap gap-2">{cats.map((c) => (
-              <span key={c} className="px-3 py-1.5 rounded-full text-sm border">{c}</span>
-            ))}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="mt-4">
-        <CardContent>
-          <div className="flex flex-col md:flex-row md:items-center gap-3">
-            <div className="flex items-center gap-2 flex-1">
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar productos..." className="w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300" />
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {usosAll.map((u) => (
-                <button
-                  key={u}
-                  onClick={() => toggle(u, fu, setFu)}
-                  className={`px-3 py-1.5 rounded-full text-sm border ${fu.includes(u) ? "bg-neutral-900 text-white border-neutral-900" : "bg-white text-neutral-800 border-neutral-300 hover:bg-neutral-100"}`}
-                >
-                  {u}
-                </button>
+            <nav className="col-span-6 md:col-span-9 flex justify-end gap-2 sm:gap-3 overflow-x-auto">
+              {NAV.map(n => (
+                <Button key={n.id} variant={active===n.id?"default":"outline"} onClick={()=>onNav(n.id)} className="whitespace-nowrap">{n.label}</Button>
               ))}
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {presAll.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => toggle(p, fp, setFp)}
-                  className={`px-3 py-1.5 rounded-full text-sm border ${fp.includes(p) ? "bg-neutral-900 text-white border-neutral-900" : "bg-white text-neutral-800 border-neutral-300 hover:bg-neutral-100"}`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-            {(fu.length || fp.length || q) && (
-              <Button variant="outline" onClick={(e) => { e.preventDefault(); setQ(""); setFu([]); setFp([]); }}>Limpiar</Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-        {list.map((p, i) => (
-          <ProductCard key={p.id} p={p} i={i} onOpen={onOpen} />
-        ))}
-        {!list.length && (
-          <Card className="col-span-full">
-            <CardContent>No hay productos que coincidan con los filtros.</CardContent>
-          </Card>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const Seguridad: React.FC = () => (
-  <div className="space-y-8 fade-in-slow">
-    <Card>
-      <div className="h-32 bg-neutral-900 text-white grid place-items-center text-2xl font-bold">Seguridad</div>
-    </Card>
-    <Card>
-      <CardContent>
-        <div className="overflow-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="text-left text-neutral-500">
-                <th className="py-2 pr-4">Producto</th>
-                <th className="py-2 pr-4">Marca</th>
-                <th className="py-2 pr-4">HDS</th>
-                <th className="py-2 pr-4">Ficha técnica</th>
-              </tr>
-            </thead>
-            <tbody>
-              {PRODUCTS.map((p) => (
-                <tr key={p.id} className="border-t">
-                  <td className="py-2 pr-4">{p.name}</td>
-                  <td className="py-2 pr-4">{p.brand}</td>
-                  <td className="py-2 pr-4 text-blue-600"><a href="#">PDF</a></td>
-                  <td className="py-2 pr-4 text-blue-600"><a href="#">PDF</a></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
-);
-
-const Contacto: React.FC = () => (
-  <section id="Contacto" className="space-y-4 fade-in">
-    <h2 className="text-xl md:text-2xl font-bold">Contacto</h2>
-    <Card>
-      <CardContent>
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="md:col-span-2">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                alert("¡Consulta enviada! (demo)");
-              }}
-              className="space-y-3"
-            >
-              <div className="grid sm:grid-cols-2 gap-3">
-                <label className="text-sm block">
-                  <span className="text-neutral-700">Nombre</span>
-                  <input required className="mt-1 w-full border rounded-xl px-3 py-2" />
-                </label>
-                <label className="text-sm block">
-                  <span className="text-neutral-700">Email</span>
-                  <input type="email" required className="mt-1 w-full border rounded-xl px-3 py-2" />
-                </label>
-                <label className="text-sm block sm:col-span-2">
-                  <span className="text-neutral-700">Mensaje</span>
-                  <textarea required className="mt-1 w-full border rounded-xl px-3 py-2 h-28"></textarea>
-                </label>
-              </div>
-              <button className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-sm bg-[#F07B39] text-white">Enviar</button>
-            </form>
-          </div>
-          <div className="space-y-2 text-sm text-neutral-700">
-            <div><b>Email</b>: info@hidraulicabande.com.ar</div>
-            <div><b>Tel</b>: 11 7524-5758</div>
-            <div><b>Horario</b>: Lun–Vie 8–13 / 14–17 · Sáb 8–12:30</div>
-            <div><b>Dirección</b>: Fray Cayetano Rodriguez 30, Los Polvorines</div>
+            </nav>
           </div>
         </div>
-      </CardContent>
-    </Card>
-  </section>
-);
+      );
+    }
 
-const MainApp: React.FC = () => {
-  const [route, setRoute] = React.useState("home");
-  const [openId, setOpenId] = React.useState<string | null>(null);
-  const destacados = PRODUCTS.filter((p) => p.destacados).slice(0, 6);
-
-  return (
-    <div className="min-h-screen" style={{ fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" }}>
-      {/* Global styles for animations and brand title */}
-      <style>{`
-        html,body{background:#fafafa}
-        .fade-in{animation:fadeIn .5s ease both}
-        .fade-in-slow{animation:fadeIn .7s ease both}
-        .fade-up{animation:fadeUp .6s ease both}
-        .delay-1{animation-delay:.08s}
-        .delay-2{animation-delay:.16s}
-        .delay-3{animation-delay:.24s}
-        .slide-in-right{animation:slideInRight .35s ease both}
-        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
-        .brand-two-lines{line-height:1.05;max-width:10rem;word-break:break-word;white-space:normal}
-      `}</style>
-
-      <Header onNav={setRoute} active={route} />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-8 space-y-10">
-        {route === "home" && (
-          <>
-            <div className="fade-in">
-              <Card className="overflow-hidden">
-                <div className="relative">
-                  <div className="h-[42vh] md:h-[56vh] bg-gradient-to-r from-neutral-800 to-neutral-700"></div>
-                  <div className="absolute inset-0 bg-black/30"></div>
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="px-6 md:px-10">
-                      <h1 className="text-3xl md:text-5xl font-extrabold text-white">Innovación y calidad desde 1970</h1>
-                      <p className="text-white/90 mt-3 text-base md:text-lg">Removedores, thinners y disolventes para la industria, la obra y el hogar.</p>
-                      <div className="mt-6 flex gap-3">
-                        <Button onClick={(e) => { e.preventDefault(); setRoute("IRAT"); }}>Descubrir marcas</Button>
-                        <Button variant="outline" href="#Contacto">Contacto</Button>
-                      </div>
-                    </div>
+    function ScreenHome({ onViewBrands, onOpenProduct }){
+      const destacados = PRODUCTS.filter(p=>p.destacados).slice(0,6);
+      return (
+        <div className="space-y-10 fade-in">
+          <Card className="overflow-hidden">
+            <div className="relative">
+              <div className="h-[42vh] md:h-[56vh] bg-gradient-to-r from-neutral-800 to-neutral-700" />
+              <div className="absolute inset-0 bg-black/30" />
+              <div className="absolute inset-0 flex items-center">
+                <div className="px-6 md:px-10">
+                  <h1 className="text-3xl md:text-5xl font-extrabold text-white">Innovación y calidad desde 1970</h1>
+                  <p className="text-white/90 mt-3 text-base md:text-lg">Removedores, thinners y disolventes para la industria, la obra y el hogar.</p>
+                  <div className="mt-6 flex gap-3">
+                    <Button onClick={onViewBrands}>Descubrir marcas</Button>
+                    <Button variant="outline" as="a" href="#contacto-section">Contacto</Button>
                   </div>
                 </div>
-              </Card>
+              </div>
             </div>
+          </Card>
 
-            <section className="space-y-4">
-              <h2 className="text-xl md:text-2xl font-bold">Nuestras marcas</h2>
-              <div className="grid md:grid-cols-3 gap-4">
-                <BrandCard i={0} brand={BRAND.IRAT} tagline="Soluciones de alto desempeño" onGo={() => setRoute("IRAT")} />
-                <BrandCard i={1} brand={BRAND.Tinex} tagline="Eficiencia para cada aplicación" onGo={() => setRoute("Tinex")} />
-                <BrandCard i={2} brand={BRAND.Roblex} tagline="Protección y acabado profesional" onGo={() => setRoute("Roblex")} />
-              </div>
-            </section>
+          <section className="space-y-4">
+            <h2 className="text-xl md:text-2xl font-bold">Nuestras marcas</h2>
+            <div className="grid md:grid-cols-3 gap-4">
+              <BrandCard brand={BRAND.IRAT}   tagline="Soluciones de alto desempeño" />
+              <BrandCard brand={BRAND.Tinex}  tagline="Eficiencia para cada aplicación" />
+              <BrandCard brand={BRAND.Roblex} tagline="Protección y acabado profesional" />
+            </div>
+          </section>
 
-            <section className="space-y-4">
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
               <h2 className="text-xl md:text-2xl font-bold">Productos destacados</h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {destacados.map((p, i) => (
-                  <ProductCard key={p.id} p={p} i={i} onOpen={setOpenId} />
-                ))}
+              <span className="text-neutral-500">★</span>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {destacados.map(p => <ProductCard key={p.id} p={p} onOpen={()=>onOpenProduct(p.id)}/>)}
+            </div>
+          </section>
+        </div>
+      );
+    }
+
+    function BrandCard({ brand, tagline }){
+      return (
+        <Card className="overflow-hidden fade-in">
+          <div className="h-32 relative overflow-hidden" style={{ background: brand.color }}>
+            <div className="absolute inset-0 grid place-items-center">
+              <img src={imgOr(brand.logo)} alt={brand.key+" logo"} className="h-16 md:h-20 opacity-95" onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
+            </div>
+          </div>
+          <CardContent className="flex items-center justify-between">
+            <div>
+              <div className="text-lg font-bold">{brand.key}</div>
+              <div className="text-sm text-neutral-600">{tagline}</div>
+            </div>
+            <Button className="group" onClick={()=> {
+              const id = brand.key.toLowerCase();
+              document.querySelector("nav").querySelectorAll("button").forEach(btn => {
+                if (btn.textContent.trim() === brand.key) btn.click();
+              });
+            }}>
+              Ver más <span className="ml-1 group-hover:translate-x-0.5 transition">›</span>
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    function ScreenBrand({ brand, onOpenProduct, search, setSearch, fUso, setFUso, fPres, setFPres }){
+      const catsByBrand = uniq(PRODUCTS.filter(p=>p.brand===brand.key).map(p=>p.category));
+      const filtered = useMemo(()=>{
+        return PRODUCTS
+          .filter(p=>p.brand===brand.key)
+          .filter(p=>!search || p.name.toLowerCase().includes(search.toLowerCase()))
+          .filter(p=>!fUso.length || fUso.every(u => p.usos.includes(u)))
+          .filter(p=>!fPres.length || fPres.every(x => p.presentaciones.includes(x)));
+      }, [brand.key, search, fUso, fPres]);
+
+      const toggle = (val, arr, setArr) => setArr(arr.includes(val) ? arr.filter(v=>v!==val) : [...arr, val]);
+
+      return (
+        <div className="space-y-8 fade-in">
+          <Card className="overflow-hidden">
+            <div className="h-48 md:h-64 relative" style={{ background: brand.color }}>
+              <div className="absolute inset-0 grid place-items-center">
+                <img src={imgOr(brand.logo)} alt={brand.key+" logo"} className="h-20 md:h-28 opacity-95" onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
               </div>
-            </section>
-          </>
-        )}
+            </div>
+          </Card>
 
-        {route === "IRAT" && <BrandScreen brand={BRAND.IRAT} onOpen={setOpenId} />}
-        {route === "Tinex" && <BrandScreen brand={BRAND.Tinex} onOpen={setOpenId} />}
-        {route === "Roblex" && <BrandScreen brand={BRAND.Roblex} onOpen={setOpenId} />}
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card className="md:col-span-2"><CardContent>
+              <p className="text-neutral-700">{brand.key} ofrece soluciones de {catsByBrand.join(", ")}. Encontrá el producto ideal según tu uso y presentación.</p>
+            </CardContent></Card>
+            <Card><CardContent>
+              <div className="font-semibold mb-2">Categorías</div>
+              <div className="flex flex-wrap gap-2">{catsByBrand.map(c => <Chip key={c}>{c}</Chip>)}</div>
+            </CardContent></Card>
+          </div>
 
-        {route === "seguridad" && <Seguridad />}
-        <Contacto />
-      </main>
+          <Card><CardContent>
+            <div className="flex flex-col md:flex-row md:items-center gap-3">
+              <div className="flex items-center gap-2 flex-1">
+                <input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Buscar productos..." className="w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300" />
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {allUsos.map(u => <Chip key={u} selected={fUso.includes(u)} onClick={()=>toggle(u,fUso,setFUso)}>{u}</Chip>)}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {allPres.map(p => <Chip key={p} selected={fPres.includes(p)} onClick={()=>toggle(p,fPres,setFPres)}>{p}</Chip>)}
+              </div>
+              {(fUso.length || fPres.length || search) && <Button variant="ghost" onClick={()=>{setSearch("");setFUso([]);setFPres([]);}}>Limpiar</Button>}
+            </div>
+          </CardContent></Card>
 
-      <Drawer openId={openId} onClose={() => setOpenId(null)} />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map(p => <ProductCard key={p.id} p={p} onOpen={()=>onOpenProduct(p.id)} />)}
+            {!filtered.length && <Card className="col-span-full"><CardContent><div className="text-neutral-600">No hay productos que coincidan con los filtros.</div></CardContent></Card>}
+          </div>
 
-      <a
-        href="https://wa.me/541175245758?text=Hola%20HRSA%2C%20necesito%20asesoramiento"
-        target="_blank"
-        className="fixed bottom-4 right-4 md:bottom-6 md:right-6 w-12 h-12 rounded-full bg-green-500 grid place-items-center shadow-lg text-white"
-        rel="noreferrer"
-      >
-        WA
-      </a>
+          <Card><CardContent>
+            <div className="font-semibold mb-3">Descargas</div>
+            <div className="overflow-auto">
+              <table className="min-w-full text-sm">
+                <thead><tr className="text-left text-neutral-500"><th className="py-2 pr-4">Producto</th><th className="py-2 pr-4">Ficha técnica</th><th className="py-2 pr-4">HDS / MSDS</th></tr></thead>
+                <tbody>
+                  {PRODUCTS.filter(p=>p.brand===brand.key).map(p=>(
+                    <tr key={p.id} className="border-t">
+                      <td className="py-2 pr-4">{p.name}</td>
+                      <td className="py-2 pr-4 text-blue-600"><a href="#">PDF</a></td>
+                      <td className="py-2 pr-4 text-blue-600"><a href="#">PDF</a></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent></Card>
+        </div>
+      );
+    }
 
-      <footer className="border-t bg-white mt-16">
-        <div className="py-4 text-center text-xs text-neutral-500">© {new Date().getFullYear()} HRSA. Todos los derechos reservados.</div>
-      </footer>
-    </div>
-  );
-};
+    function ProductCard({ p, onOpen }){
+      return (
+        <Card className="hover:shadow-md transition">
+          <div className="h-64 md:h-72 rounded-t-2xl bg-white grid place-items-center overflow-hidden">
+            <img src={imgOr(p.image)} alt={p.name} className="object-contain max-h-56 md:max-h-64 w-auto" onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
+          </div>
+          <CardContent>
+            <div className="text-xs text-neutral-500">{p.brand} · {p.category}</div>
+            <div className="font-semibold mt-1">{p.name}</div>
+            <div className="mt-2 flex flex-wrap gap-1">{p.usos.map(u => <span key={u} className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 border">{u}</span>)}</div>
+            <div className="mt-3 flex justify-between items-center">
+              <Button onClick={onOpen} variant="outline">Ver producto</Button>
+              <Button as="a" href={`https://wa.me/541175245758?text=Hola%20HRSA%2C%20quiero%20consultar%20por%20${encodeURIComponent(p.name)}%20(marca%20${p.brand})`} target="_blank">WhatsApp</Button>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
 
-export default MainApp;
+    function ProductDrawer({ openId, onClose }){
+      const p = PRODUCTS.find(x => x.id === openId);
+      if (!p) return null;
+      return (
+        <div className="fixed inset-0 z-[60]">
+          <div className="absolute inset-0 bg-black/40" onClick={onClose}></div>
+          <div className="absolute right-0 top-0 h-full w-full sm:w-[480px] bg-white shadow-2xl fade-in">
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="font-semibold">{p.name}</div>
+              <Button variant="ghost" onClick={onClose}>Cerrar</Button>
+            </div>
+            <div className="p-4 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
+              <div className="h-64 md:h-80 rounded-xl bg-white grid place-items-center overflow-hidden">
+                <img src={imgOr(p.image)} alt={p.name} className="object-contain max-h-64 md:max-h-72 w-auto" onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
+              </div>
+              <div className="text-sm text-neutral-500">{p.brand} · {p.category}</div>
+              <p className="text-neutral-700">{p.desc}</p>
+              <div className="flex flex-wrap gap-2">
+                {p.usos.map(u => <span key={u} className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">{u}</span>)}
+                {p.presentaciones.map(u => <span key={u} className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">{u}</span>)}
+              </div>
+              <div className="text-sm"><b>Rendimiento:</b> {p.rendimiento}</div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button as="a" variant="outline" href="#">Ficha técnica</Button>
+                <Button as="a" variant="outline" href="#">HDS / MSDS</Button>
+              </div>
+              <div className="flex gap-2">
+                <Button as="a" href={`https://wa.me/541175245758?text=Hola%20HRSA%2C%20quiero%20consultar%20por%20${encodeURIComponent(p.name)}%20(marca%20${p.brand})`} target="_blank">Consultar</Button>
+                <Button variant="outline" as="a" href="#contacto-form">Formulario</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-// ===== Lightweight smoke tests (run in browser) =====
-if (typeof window !== "undefined") {
-  const assert = (cond: boolean, msg: string) => (cond ? console.info("[PASS]", msg) : console.error("[FAIL]", msg));
-  assert(Array.isArray(PRODUCTS) && PRODUCTS.length >= 6, "Productos cargados");
-  assert(typeof PLACEHOLDER === "string" && PLACEHOLDER.startsWith("data:image/svg+xml"), "Placeholder válido");
-  assert(["IRAT", "Tinex", "Roblex"].every((b) => PRODUCTS.some((p) => p.brand === (b as any))), "Todas las marcas presentes");
-  // Nuevo test: el helper imgOr debe retornar un data URI cuando la key no existe
-  assert((imgOr("NO_EXISTE") || "").startsWith("data:image/svg+xml"), "Fallback a placeholder para imagen faltante");
-}
+    function ScreenSeguridad(){
+      const items = [
+        { t: "EPP obligatorio", d: "Usar guantes, gafas y mascarilla adecuada." },
+        { t: "Ventilación", d: "Trabajar en espacios ventilados o con extracción." },
+        { t: "Almacenamiento", d: "Envase original, lejos de calor y chispas." },
+        { t: "Emergencias", d: "Acudir a centros de asistencia y seguir HDS." },
+      ];
+      return (
+        <div className="space-y-8 fade-in">
+          <Card><div className="h-32 bg-neutral-900 text-white grid place-items-center text-2xl font-bold rounded-2xl">Seguridad</div></Card>
+          <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {items.map((g,i)=>(<Card key={i}><CardContent><div className="font-semibold">{g.t}</div><p className="text-sm text-neutral-600">{g.d}</p></CardContent></Card>))}
+          </section>
+        </div>
+      );
+    }
+
+    function GlobalContact(){
+      return (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-10" id="contacto-section">
+          <Card className="overflow-hidden">
+            <div className="h-16 bg-gradient-to-r from-neutral-900 to-neutral-700 text-white grid place-items-center text-xl font-semibold">Contacto</div>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4" id="contacto-form">
+                <div className="md:col-span-2">
+                  <form onSubmit={(e)=>{ e.preventDefault(); alert("¡Consulta enviada! (demo)"); }} className="space-y-3">
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <Input label="Nombre" required />
+                      <Input label="Email" type="email" required />
+                      <Input label="Teléfono" />
+                      <Select label="Motivo" options={["Consulta técnica","Comercial","Otro"]} />
+                      <Select label="Marca" options={["IRAT","Tinex","Roblex"]} />
+                      <Input label="Producto (opcional)" placeholder="Ej: IRAT Thinner X" />
+                      <Textarea label="Mensaje" className="sm:col-span-2" required />
+                      <label className="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" required/> Acepto la Política de Privacidad</label>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button type="submit">Enviar consulta</Button>
+                      <Button as="a" variant="outline" href="https://wa.me/541175245758" target="_blank">WhatsApp</Button>
+                    </div>
+                  </form>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <div className="font-semibold mb-2">Datos</div>
+                    <div className="text-sm">Email: <a className="text-blue-600" href="mailto:info@hidraulicabande.com.ar">info@hidraulicabande.com.ar</a></div>
+                    <div className="text-sm">Tel: 11 7524-5758</div>
+                    <div className="text-sm">Horario: Lun–Vie 8–13 / 14–17 · Sáb 8–12:30</div>
+                    <div className="text-sm">Dirección: Fray Cayetano Rodriguez 30, Los Polvorines</div>
+                  </div>
+                  <div>
+                    <div className="font-semibold mb-2">Mapa</div>
+                    <div className="h-40 rounded-xl bg-neutral-200 grid place-items-center text-neutral-500">Mapa (placeholder)</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+      );
+    }
+
+    function Input({ label, className="", ...props }){
+      return (<label className={"text-sm block "+className}><span className="text-neutral-700">{label}</span><input {...props} className="mt-1 w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300"/></label>);
+    }
+    function Textarea({ label, className="", ...props }){
+      return (<label className={"text-sm block "+className}><span className="text-neutral-700">{label}</span><textarea {...props} className="mt-1 w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300 h-28"/></label>);
+    }
+    function Select({ label, options=[], className="", ...props }){
+      return (<label className={"text-sm block "+className}><span className="text-neutral-700">{label}</span><select {...props} className="mt-1 w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300"><option value="">Seleccionar…</option>{options.map(o => <option key={o} value={o}>{o}</option>)}</select></label>);
+    }
+
+    function Footer({ onNav }){
+      const goContact = (e)=>{ e.preventDefault(); const el = document.getElementById("contacto-section"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); };
+      return (
+        <footer className="border-t bg-white mt-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-8 grid sm:grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+            <div>
+              <div className="font-semibold mb-2">HRSA</div>
+              <p className="text-neutral-600">Removedores, thinners y disolventes para la industria, la obra y el hogar.</p>
+            </div>
+            <div>
+              <div className="font-semibold mb-2">Sitio</div>
+              <ul className="space-y-1">
+                <li><a href="#" onClick={(e)=>{e.preventDefault(); onNav("home");}}>Inicio</a></li>
+                <li><a href="#" onClick={(e)=>{e.preventDefault(); onNav("irat");}}>IRAT</a></li>
+                <li><a href="#" onClick={(e)=>{e.preventDefault(); onNav("tinex");}}>Tinex</a></li>
+                <li><a href="#" onClick={(e)=>{e.preventDefault(); onNav("roblex");}}>Roblex</a></li>
+                <li><a href="#" onClick={(e)=>{e.preventDefault(); onNav("seguridad");}}>Seguridad</a></li>
+                <li><a href="#" onClick={goContact}>Contacto</a></li>
+              </ul>
+            </div>
+            <div>
+              <div className="font-semibold mb-2">Legales</div>
+              <ul className="space-y-1">
+                <li><a href="#">Términos</a></li>
+                <li><a href="#">Privacidad</a></li>
+                <li><a href="#">Cookies</a></li>
+              </ul>
+            </div>
+            <div>
+              <div className="font-semibold mb-2">Contacto</div>
+              <ul className="space-y-1 text-neutral-600">
+                <li><a className="text-blue-600" href="mailto:info@hidraulicabande.com.ar">info@hidraulicabande.com.ar</a></li>
+                <li>11 7524-5758</li>
+                <li>Fray Cayetano Rodriguez 30, Los Polvorines</li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t py-4 text-center text-xs text-neutral-500">© {new Date().getFullYear()} HRSA. Todos los derechos reservados.</div>
+        </footer>
+      );
+    }
+
+    function WhatsAppFab(){
+      return (<a href="https://wa.me/541175245758?text=Hola%20HRSA%2C%20necesito%20asesoramiento" target="_blank" className="fixed bottom-4 right-4 md:bottom-6 md:right-6 w-12 h-12 rounded-full bg-green-500 grid place-items-center shadow-lg text-white">WA</a>);
+    }
+
+    // -------- Smoke tests
+    const _assert = (c,m)=>{ if(!c) console.error("[TEST FAIL]",m); else console.info("[TEST PASS]",m); };
+    _assert(Array.isArray(PRODUCTS) && PRODUCTS.length>=6, "PRODUCTS: seeded");
+    _assert(["IRAT","Tinex","Roblex"].every(b => PRODUCTS.some(p=>p.brand===b)), "PRODUCTS: brands present");
+    _assert(typeof imgOr("NOPE")==="string", "imgOr: fallback ok");
+
+    // Render
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
