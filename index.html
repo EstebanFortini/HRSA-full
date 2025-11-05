@@ -3,294 +3,428 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>HRSA — Prototype</title>
-  <!-- Tailwind CDN (ok for prototype) -->
+  <title>HRSA — Demo estática (HTML puro)</title>
+  <!-- Tailwind para estilos utilitarios -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- React + ReactDOM + Babel (para usar JSX sin build) -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    /* simple shim animation para botones/hero */
-    .fade-in{animation:fade .6s ease both}@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .fade{animation:fade .35s ease both}@keyframes fade{from{opacity:.0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+    .drawer-enter{animation:slideIn .25s ease both}@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
   </style>
 </head>
 <body class="bg-neutral-50 text-neutral-900">
-  <div id="app"></div>
+  <!-- HEADER -->
+  <header class="sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white/95 border-b">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 grid grid-cols-2 md:grid-cols-12 items-center gap-3">
+      <div class="col-span-6 md:col-span-3 flex items-center gap-3">
+        <img data-asset="HRSA_MARCA" alt="HRSA" class="h-12 md:h-14 w-auto"/>
+        <span class="font-semibold hidden sm:block leading-tight">Hugo Rodríguez y<br/>Cía. S.A.</span>
+      </div>
+      <nav class="col-span-6 md:col-span-9 flex justify-end gap-2 sm:gap-3 overflow-x-auto text-sm">
+        <a class="px-4 py-2 rounded-lg bg-[#F07B39] text-white" href="#inicio">Inicio</a>
+        <a class="px-4 py-2 rounded-lg border" href="#irat">IRAT</a>
+        <a class="px-4 py-2 rounded-lg border" href="#tinex">Tinex</a>
+        <a class="px-4 py-2 rounded-lg border" href="#roblex">Roblex</a>
+        <a class="px-4 py-2 rounded-lg border" href="#seguridad">Seguridad</a>
+        <a class="px-4 py-2 rounded-lg border" href="#contacto">Contacto</a>
+      </nav>
+    </div>
+  </header>
 
-  <script type="text/babel">
-    const {useState, useMemo} = React;
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pb-16">
+    <!-- HOME / HERO -->
+    <section id="inicio" class="space-y-10 mt-6">
+      <div class="rounded-2xl border bg-white overflow-hidden relative">
+        <img data-asset="FABRICA_BG" alt="Fábrica" class="absolute inset-0 w-full h-full object-cover"/>
+        <div class="h-[42vh] md:h-[56vh]"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-neutral-900/80 via-neutral-900/55 to-[#F07B39]/35"></div>
+        <div class="absolute inset-0 flex items-center">
+          <div class="px-6 md:px-10">
+            <h1 class="text-3xl md:text-5xl font-extrabold text-white">Innovación y calidad desde 1970</h1>
+            <p class="text-white/90 mt-3 text-base md:text-lg">Removedores, thinners y disolventes para la industria, la obra y el hogar.</p>
+            <div class="mt-6 flex gap-3">
+              <a href="#marcas" class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium bg-[#F07B39] text-white">Descubrir marcas</a>
+              <a href="#contacto" class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium border bg-white">Contacto</a>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    /* ========================
-       ASSETS & PLACEHOLDER
-       ======================== */
-    const PLACEHOLDER = "data:image/svg+xml;utf8," + encodeURIComponent(
-      '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400"><rect width="100%" height="100%" fill="#e5e7eb"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#6b7280">Sin imagen</text></svg>'
-    );
+      <!-- Damero decorativo -->
+      <div id="damero1" class="w-full h-6 rounded-xl overflow-hidden bg-repeat-x"></div>
 
-    // Nombres de archivo (colocalos junto al index.html). Si querés, podés ponerlos en /assets/.
+      <!-- Launcher de marcas -->
+      <section id="marcas" class="space-y-4">
+        <h2 class="text-xl md:text-2xl font-bold">Nuestras marcas</h2>
+        <div class="grid md:grid-cols-3 gap-4">
+          <div class="rounded-2xl border bg-white overflow-hidden">
+            <div class="h-32 flex items-center justify-center" style="background:#000">
+              <img data-asset="IRAT_LOGO" alt="IRAT" class="h-16 md:h-20 opacity-90"/>
+            </div>
+            <div class="p-4 flex items-center justify-between">
+              <div>
+                <div class="text-lg font-bold">IRAT</div>
+                <div class="text-sm text-neutral-600">Soluciones de alto desempeño</div>
+              </div>
+              <a href="#irat" class="px-4 py-2 rounded-lg bg-[#F07B39] text-white">Ver más ›</a>
+            </div>
+          </div>
+          <div class="rounded-2xl border bg-white overflow-hidden">
+            <div class="h-32 flex items-center justify-center" style="background:#00AEEF">
+              <img data-asset="TINEX_LOGO" alt="Tinex" class="h-16 md:h-20 opacity-90"/>
+            </div>
+            <div class="p-4 flex items-center justify-between">
+              <div>
+                <div class="text-lg font-bold">Tinex</div>
+                <div class="text-sm text-neutral-600">Eficiencia para cada aplicación</div>
+              </div>
+              <a href="#tinex" class="px-4 py-2 rounded-lg bg-[#F07B39] text-white">Ver más ›</a>
+            </div>
+          </div>
+          <div class="rounded-2xl border bg-white overflow-hidden">
+            <div class="h-32 flex items-center justify-center" style="background:#004F3D">
+              <img data-asset="ROBLEX_LOGO" alt="Roblex" class="h-16 md:h-20 opacity-90"/>
+            </div>
+            <div class="p-4 flex items-center justify-between">
+              <div>
+                <div class="text-lg font-bold">Roblex</div>
+                <div class="text-sm text-neutral-600">Protección y acabado profesional</div>
+              </div>
+              <a href="#roblex" class="px-4 py-2 rounded-lg bg-[#F07B39] text-white">Ver más ›</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Damero decorativo -->
+      <div id="damero2" class="w-full h-6 rounded-xl overflow-hidden bg-repeat-x"></div>
+
+      <!-- Productos destacados -->
+      <section class="space-y-4">
+        <h2 class="text-xl md:text-2xl font-bold">Productos destacados</h2>
+        <div id="destacados" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </section>
+    </section>
+
+    <!-- IRAT / TINEX / ROBLEX (secciones con catálogo) -->
+    <section id="irat" class="space-y-6 mt-14">
+      <div class="rounded-2xl border overflow-hidden">
+        <div class="h-48 md:h-64 relative" style="background:#000">
+          <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle,_black_1px,_transparent_1px)] [background-size:16px_16px]"></div>
+          <div class="absolute inset-0 flex items-center px-6 md:px-10">
+            <div>
+              <div class="text-white/90 text-sm">Marca</div>
+              <h2 class="text-3xl md:text-5xl font-extrabold text-white">IRAT</h2>
+              <img data-asset="IRAT_LOGO" alt="IRAT logo" class="h-20 md:h-28 mt-3 opacity-95"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="grid-irat" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+    <section id="tinex" class="space-y-6 mt-14">
+      <div class="rounded-2xl border overflow-hidden">
+        <div class="h-48 md:h-64 relative" style="background:#00AEEF">
+          <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle,_black_1px,_transparent_1px)] [background-size:16px_16px]"></div>
+          <div class="absolute inset-0 flex items-center px-6 md:px-10">
+            <div>
+              <div class="text-white/90 text-sm">Marca</div>
+              <h2 class="text-3xl md:text-5xl font-extrabold text-white">Tinex</h2>
+              <img data-asset="TINEX_LOGO" alt="TINEX logo" class="h-20 md:h-28 mt-3 opacity-95"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="grid-tinex" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+    <section id="roblex" class="space-y-6 mt-14">
+      <div class="rounded-2xl border overflow-hidden">
+        <div class="h-48 md:h-64 relative" style="background:#004F3D">
+          <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle,_black_1px,_transparent_1px)] [background-size:16px_16px]"></div>
+          <div class="absolute inset-0 flex items-center px-6 md:px-10">
+            <div>
+              <div class="text-white/90 text-sm">Marca</div>
+              <h2 class="text-3xl md:text-5xl font-extrabold text-white">Roblex</h2>
+              <img data-asset="ROBLEX_LOGO" alt="ROBLEX logo" class="h-20 md:h-28 mt-3 opacity-95"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="grid-roblex" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- SEGURIDAD -->
+    <section id="seguridad" class="space-y-8 mt-14">
+      <div class="rounded-2xl border overflow-hidden bg-white">
+        <div class="h-32 bg-neutral-900 text-white grid place-items-center text-2xl font-bold relative">
+          <span>Seguridad</span>
+          <div id="damero3" class="absolute bottom-0 left-0 w-full h-6 bg-repeat-x"></div>
+        </div>
+      </div>
+      <section class="space-y-4">
+        <h3 class="text-xl font-semibold">Buenas prácticas</h3>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="rounded-2xl border bg-white p-4"><div class="font-semibold">EPP obligatorio</div><p class="text-sm text-neutral-600">Guantes, gafas y mascarilla.</p></div>
+          <div class="rounded-2xl border bg-white p-4"><div class="font-semibold">Ventilación</div><p class="text-sm text-neutral-600">Trabajar en espacios ventilados.</p></div>
+          <div class="rounded-2xl border bg-white p-4"><div class="font-semibold">Almacenamiento</div><p class="text-sm text-neutral-600">Lejos de calor y chispas.</p></div>
+          <div class="rounded-2xl border bg-white p-4"><div class="font-semibold">Emergencias</div><p class="text-sm text-neutral-600">Consultar HDS y centros de asistencia.</p></div>
+        </div>
+      </section>
+      <section class="space-y-4">
+        <h3 class="text-xl font-semibold">Índice de HDS/MSDS</h3>
+        <div class="rounded-2xl border bg-white p-4 overflow-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="text-left text-neutral-500">
+                <th class="py-2 pr-4">Producto</th>
+                <th class="py-2 pr-4">Marca</th>
+                <th class="py-2 pr-4">HDS</th>
+                <th class="py-2 pr-4">Ficha técnica</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-hds"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <!-- CONTACTO -->
+    <section id="contacto" class="mt-14">
+      <div class="rounded-2xl border overflow-hidden bg-white">
+        <div class="h-16 bg-gradient-to-r from-neutral-900 to-neutral-700 text-white grid place-items-center text-xl font-semibold">Contacto</div>
+        <div class="p-4 grid md:grid-cols-3 gap-4">
+          <div class="md:col-span-2">
+            <form onsubmit="event.preventDefault(); alert('¡Consulta enviada! (demo)')" class="space-y-3">
+              <div class="grid sm:grid-cols-2 gap-3">
+                <label class="text-sm block"><span class="text-neutral-700">Nombre</span><input class="mt-1 w-full border rounded-xl px-3 py-2" required/></label>
+                <label class="text-sm block"><span class="text-neutral-700">Email</span><input type="email" class="mt-1 w-full border rounded-xl px-3 py-2" required/></label>
+                <label class="text-sm block sm:col-span-2"><span class="text-neutral-700">Mensaje</span><textarea class="mt-1 w-full border rounded-xl px-3 py-2 h-28" required></textarea></label>
+                <label class="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" required/> Acepto la Política de Privacidad</label>
+              </div>
+              <button class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium bg-[#F07B39] text-white">Enviar consulta</button>
+              <a class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium border bg-white" href="https://wa.me/541175245758" target="_blank">WhatsApp</a>
+            </form>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="font-semibold">Datos</div>
+            <div>✉️ <a class="text-blue-600" href="mailto:info@hidraulicabande.com.ar">info@hidraulicabande.com.ar</a></div>
+            <div>📞 11 7524-5758</div>
+            <div>🕒 Lun–Vie 8–13 / 14–17 · Sáb 8–12:30</div>
+            <div>📍 Fray Cayetano Rodriguez 30, Los Polvorines</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t bg-white mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-8 grid sm:grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+      <div>
+        <div class="font-semibold mb-2">HRSA</div>
+        <p class="text-neutral-600">Removedores, thinners y disolventes para la industria, la obra y el hogar.</p>
+      </div>
+      <div>
+        <div class="font-semibold mb-2">Sitio</div>
+        <ul class="space-y-1">
+          <li><a href="#inicio">Inicio</a></li>
+          <li><a href="#irat">IRAT</a></li>
+          <li><a href="#tinex">Tinex</a></li>
+          <li><a href="#roblex">Roblex</a></li>
+          <li><a href="#seguridad">Seguridad</a></li>
+          <li><a href="#contacto">Contacto</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="font-semibold mb-2">Legales</div>
+        <ul class="space-y-1">
+          <li><a href="#">Términos</a></li>
+          <li><a href="#">Privacidad</a></li>
+          <li><a href="#">Cookies</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="font-semibold mb-2">Contacto</div>
+        <ul class="space-y-1 text-neutral-600">
+          <li><a class="text-blue-600" href="mailto:info@hidraulicabande.com.ar">info@hidraulicabande.com.ar</a></li>
+          <li>11 7524-5758</li>
+          <li>Fray Cayetano Rodriguez 30, Los Polvorines</li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t py-4 text-center text-xs text-neutral-500">© <span id="year"></span> HRSA. Todos los derechos reservados.</div>
+  </footer>
+
+  <!-- FAB WhatsApp -->
+  <a href="https://wa.me/541175245758?text=Hola%20HRSA%2C%20necesito%20asesoramiento" target="_blank" class="fixed bottom-4 right-4 md:bottom-6 md:right-6 w-12 h-12 rounded-full bg-green-500 grid place-items-center shadow-lg text-white text-xl">Ⓦ</a>
+
+  <!-- SCRIPT (vanilla) -->
+  <script>
+    // ===== Config de assets =====
     const FILEMAP = {
-      ROBLEX_BRIC: "BrickBritishx1.png",
-      IRAT_DM02: "DM02x1.png",
-      ROBLEX_HIDRO_CA: "HidroCaobax1.png",
-      HRSA_MARCA: "HRSAMarca.png",
-      IRAT_LOGO: "IRATMARCA.png",
-      IRAT_N4: "N4x1.png",
-      ROBLEX_LOGO: "ROBLEXMARCA.png",
-      TINEX_LOGO: "TinexCian.png",
-      TINEX_20L: "TinexSYBx18.png",
-      TINEX_920: "TinexSYBx920.png",
-      FABRICA_BG: "entrada-fabrica.jpg",
-      DAMERO: "DameroIRAT.png",
+      ROBLEX_BRIC: 'BrickBritishx1.png',
+      IRAT_DM02: 'DM02x1.png',
+      ROBLEX_HIDRO_CA: 'HidroCaobax1.png',
+      HRSA_MARCA: 'HRSAMarca.png',
+      IRAT_LOGO: 'IRATMARCA.png',
+      IRAT_N4: 'N4x1.png',
+      ROBLEX_LOGO: 'ROBLEXMARCA.png',
+      TINEX_LOGO: 'TinexCian.png',
+      TINEX_20L: 'TinexSYBx18.png',
+      TINEX_920: 'TinexSYBx920.png',
+      FABRICA_BG: 'entrada-fabrica.jpg',
+      DAMERO: 'DameroIRAT.png',
     };
-
-    function getAssetCandidates(key){
+    const PLACEHOLDER = 'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400"><rect width="100%" height="100%" fill="#e5e7eb"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#6b7280">Sin imagen</text></svg>');
+    function candidates(key){
       const ov = (window.__HRSA_ASSETS||{})[key];
       if(ov) return [ov];
       const f = FILEMAP[key];
       if(!f) return [];
-      // Prioriza mismo directorio; si no, prueba /assets
-      return [f, `assets/${f}`];
+      // Primero mismo directorio, luego /assets
+      return [f, 'assets/'+f];
     }
-    function getAsset(key){
-      const c = getAssetCandidates(key);
-      return c.length ? c[0] : undefined;
+    function applyAssets(){
+      document.querySelectorAll('img[data-asset]').forEach(img=>{
+        const key = img.getAttribute('data-asset');
+        const list = candidates(key);
+        let i = 0;
+        function tryNext(){
+          if(i < list.length){ img.src = list[i++]; }
+          else { img.src = PLACEHOLDER; }
+        }
+        img.onerror = tryNext; tryNext();
+      });
+      // Damero background
+      const dam = candidates('DAMERO')[0] || PLACEHOLDER;
+      ['damero1','damero2','damero3'].forEach(id=>{
+        const el = document.getElementById(id); if(el){ el.style.backgroundImage = `url(${dam})`; el.style.backgroundSize = 'auto 100%'; }
+      });
     }
 
-    function SmartImg({assetKey, alt="", className="", style, fallback=PLACEHOLDER}){
-      const candidates = Array.isArray(assetKey)
-        ? assetKey
-        : (typeof assetKey === 'string' && (assetKey.startsWith('http') || assetKey.startsWith('data:')))
-          ? [assetKey]
-          : getAssetCandidates(assetKey);
-      const [i,setI] = React.useState(0);
-      const src = candidates[i] || fallback;
-      return <img src={src} alt={alt} className={className} style={style}
-        onError={(e)=>{ if(i < candidates.length-1) setI(i+1); else e.currentTarget.src = fallback; }} />
-    }
-
-    /* ========================
-       DATA
-       ======================== */
-    const BRAND = {
-      IRAT: { key: 'IRAT', color: '#000000', text: '#ffffff' },
-      Tinex: { key: 'Tinex', color: '#00AEEF', text: '#ffffff' },
-      Roblex: { key: 'Roblex', color: '#004F3D', text: '#ffffff' },
-    };
-
+    // ===== Datos productos =====
     const PRODUCTS = [
-      { id:'irat-01', brand:'IRAT', name:'IRAT Disolve Especial N°4', category:'Disolventes', usos:['industria','obra'], presentaciones:['1 L'], rendimiento:'—', seguridad:['ghs02','ghs07'], desc:'Disolve especial para esmaltes horneables.', destacados:true, downloads:{ficha:true,hds:true}, image:'IRAT_N4' },
-      { id:'irat-02', brand:'IRAT', name:'IRAT Thinner Universal DM-02', category:'Thinners', usos:['industria','automotriz'], presentaciones:['1 L','20 L'], rendimiento:'—', seguridad:['ghs02'], desc:'Thinner para esmaltes sintéticos.', destacados:true, downloads:{ficha:true,hds:true}, image:'IRAT_DM02' },
-      { id:'tinex-01', brand:'Tinex', name:'Tinex 20L', category:'Thinners', usos:['industria','madera'], presentaciones:['20 L'], rendimiento:'—', seguridad:['ghs02'], desc:'Para limpieza y dilución de pinturas sintéticas.', destacados:true, downloads:{ficha:true,hds:true}, image:'TINEX_20L' },
-      { id:'tinex-02', brand:'Tinex', name:'Tinex 920cc', category:'Disolventes', usos:['obra','hogar'], presentaciones:['920 cc'], rendimiento:'—', seguridad:['ghs07'], desc:'Limpieza y dilución doméstica/profesional.', destacados:false, downloads:{ficha:true,hds:true}, image:'TINEX_920' },
-      { id:'roblex-01', brand:'Roblex', name:'Roblex BRIC Ladrillos', category:'Pinturas', usos:['obra'], presentaciones:['1 L'], rendimiento:'—', seguridad:['ghs02'], desc:'Recubrimiento protector para ladrillos.', destacados:true, downloads:{ficha:true,hds:true}, image:'ROBLEX_BRIC' },
-      { id:'roblex-02', brand:'Roblex', name:'Roblex Hidrolaca Caoba', category:'Barnices', usos:['madera','hogar'], presentaciones:['1 L'], rendimiento:'12–16 m²/L', seguridad:['ghs07'], desc:'Laca para maderas flexible y perdurable.', destacados:true, downloads:{ficha:true,hds:true}, image:'ROBLEX_HIDRO_CA' },
+      { id:'irat-01', brand:'IRAT', name:'IRAT Disolve Especial N°4', category:'Disolventes', usos:['industria','obra'], presentaciones:['1 L'], rendimiento:'—', seguridad:['ghs02','ghs07'], desc:'Disolve especial para esmaltes horneables.', destacados:true, image:'IRAT_N4' },
+      { id:'irat-02', brand:'IRAT', name:'IRAT Thinner Universal DM-02', category:'Thinners', usos:['industria','automotriz'], presentaciones:['1 L','20 L'], rendimiento:'—', seguridad:['ghs02'], desc:'Thinner para esmaltes sintéticos.', destacados:true, image:'IRAT_DM02' },
+      { id:'tinex-01', brand:'Tinex', name:'Tinex 20L', category:'Thinners', usos:['industria','madera'], presentaciones:['20 L'], rendimiento:'—', seguridad:['ghs02'], desc:'Para limpieza y dilución de pinturas sintéticas.', destacados:true, image:'TINEX_20L' },
+      { id:'tinex-02', brand:'Tinex', name:'Tinex 920cc', category:'Disolventes', usos:['obra','hogar'], presentaciones:['920 cc'], rendimiento:'—', seguridad:['ghs07'], desc:'Limpieza y dilución doméstica/profesional.', destacados:false, image:'TINEX_920' },
+      { id:'roblex-01', brand:'Roblex', name:'Roblex BRIC Ladrillos', category:'Pinturas', usos:['obra'], presentaciones:['1 L'], rendimiento:'—', seguridad:['ghs02'], desc:'Recubrimiento protector para ladrillos.', destacados:true, image:'ROBLEX_BRIC' },
+      { id:'roblex-02', brand:'Roblex', name:'Roblex Hidrolaca Caoba', category:'Barnices', usos:['madera','hogar'], presentaciones:['1 L'], rendimiento:'12–16 m²/L', seguridad:['ghs07'], desc:'Laca para maderas flexible y perdurable.', destacados:true, image:'ROBLEX_HIDRO_CA' },
     ];
 
-    /* ========================
-       UI PRIMITIVES
-       ======================== */
-    const Card = ({className="", children}) => (
-      <div className={"rounded-2xl border border-neutral-200 bg-white shadow-sm "+className}>{children}</div>
-    );
-    const Button = ({className="", children, onClick, href, target, variant='solid'})=>{
-      const base = "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition active:scale-[.98]";
-      const variants = {
-        solid: "bg-[#F07B39] text-white hover:brightness-110",
-        outline: "border border-neutral-300 text-neutral-800 bg-white hover:bg-neutral-50",
-        ghost: "text-neutral-700 hover:bg-neutral-100"
-      };
-      const cls = `${base} ${variants[variant]} ${className}`;
-      return href ? <a className={cls} href={href} target={target}>{children}</a> : <button className={cls} onClick={onClick}>{children}</button>;
-    };
-
-    /* ========================
-       SCREENS
-       ======================== */
-    function DameroStrip({className=""}){
-      const src = getAsset('DAMERO') || PLACEHOLDER;
-      return <div className={"w-full h-6 bg-repeat-x "+className} style={{backgroundImage:`url(${src})`,backgroundSize:'auto 100%'}} />;
+    function productCardHTML(p){
+      const wa = `https://wa.me/541175245758?text=Hola%20HRSA%2C%20quiero%20consultar%20por%20${encodeURIComponent(p.name)}%20(marca%20${p.brand})`;
+      return `
+        <div class="rounded-2xl border bg-white hover:shadow-md transition fade">
+          <div class="h-64 md:h-72 rounded-t-2xl bg-white grid place-items-center overflow-hidden">
+            <img data-asset="${p.image}" alt="${p.name}" class="object-contain max-h-48 md:max-h-56 w-auto"/>
+          </div>
+          <div class="p-4">
+            <div class="text-xs text-neutral-500">${p.brand} · ${p.category}</div>
+            <div class="font-semibold mt-1">${p.name}</div>
+            <div class="mt-2 flex flex-wrap gap-1">
+              ${p.usos.map(u=>`<span class="text-xs px-2 py-0.5 rounded-full bg-neutral-100 border">${u}</span>`).join('')}
+            </div>
+            <div class="mt-3 flex justify-between items-center">
+              <button data-open="${p.id}" class="px-4 py-2 rounded-lg border bg-white">Ver producto</button>
+              <a class="px-4 py-2 rounded-lg bg-[#F07B39] text-white" target="_blank" href="${wa}">WhatsApp</a>
+            </div>
+          </div>
+        </div>`;
     }
 
-    function BrandCard({brand, tagline}){
-      const logoKey = brand.key==='IRAT'? 'IRAT_LOGO' : brand.key==='Tinex'? 'TINEX_LOGO' : 'ROBLEX_LOGO';
-      return (
-        <Card className="overflow-hidden">
-          <div className="h-32 relative overflow-hidden flex items-center justify-center" style={{background:brand.color}}>
-            <SmartImg assetKey={logoKey} alt={brand.key+" logo"} className="h-16 md:h-20 opacity-90" />
-          </div>
-          <div className="p-4 flex items-center justify-between">
-            <div>
-              <div className="text-lg font-bold">{brand.key}</div>
-              <div className="text-sm text-neutral-600">{tagline}</div>
-            </div>
-            <Button className="group" href={`#${brand.key.toLowerCase()}`}>Ver más ›</Button>
-          </div>
-        </Card>
-      );
+    function renderHome(){
+      document.getElementById('destacados').innerHTML = PRODUCTS.filter(p=>p.destacados).slice(0,6).map(productCardHTML).join('');
+    }
+    function renderBrandGrids(){
+      document.getElementById('grid-irat').innerHTML = PRODUCTS.filter(p=>p.brand==='IRAT').map(productCardHTML).join('');
+      document.getElementById('grid-tinex').innerHTML = PRODUCTS.filter(p=>p.brand==='Tinex').map(productCardHTML).join('');
+      document.getElementById('grid-roblex').innerHTML = PRODUCTS.filter(p=>p.brand==='Roblex').map(productCardHTML).join('');
+    }
+    function renderHDS(){
+      const tbody = document.getElementById('tabla-hds');
+      tbody.innerHTML = PRODUCTS.map(p=>`
+        <tr class="border-t">
+          <td class="py-2 pr-4">${p.name}</td>
+          <td class="py-2 pr-4">${p.brand}</td>
+          <td class="py-2 pr-4 text-blue-600"><a href="#">PDF</a></td>
+          <td class="py-2 pr-4 text-blue-600"><a href="#">PDF</a></td>
+        </tr>`).join('');
     }
 
-    function ProductCard({p}){
-      return (
-        <Card className="hover:shadow-md transition fade-in">
-          <div className="h-64 md:h-72 rounded-t-2xl bg-white grid place-items-center overflow-hidden">
-            <SmartImg assetKey={p.image} alt={p.name} className="object-contain max-h-48 md:max-h-56 w-auto" />
+    // ===== Drawer (detalle producto) =====
+    function ensureDrawer(){
+      if(document.getElementById('drawer')) return;
+      const div = document.createElement('div');
+      div.id = 'drawer';
+      div.className = 'fixed inset-0 z-[60] hidden';
+      div.innerHTML = `
+        <div id="drawer-backdrop" class="absolute inset-0 bg-black/40"></div>
+        <div class="absolute right-0 top-0 h-full w-full sm:w-[480px] bg-white shadow-2xl drawer-enter">
+          <div class="p-4 border-b flex items-center justify-between">
+            <div class="font-semibold" id="dw-title">Producto</div>
+            <button id="dw-close" class="px-2 py-1">✖️</button>
           </div>
-          <div className="p-4">
-            <div className="text-xs text-neutral-500">{p.brand} · {p.category}</div>
-            <div className="font-semibold mt-1">{p.name}</div>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {p.usos.map(u=> <span key={u} className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 border">{u}</span>)}
-            </div>
-            <div className="mt-3 flex justify-between items-center">
-              <Button variant="outline">Ver producto</Button>
-              <Button href={`https://wa.me/541175245758?text=Hola%20HRSA%2C%20quiero%20consultar%20por%20${encodeURIComponent(p.name)}%20(marca%20${p.brand})`} target="_blank">WhatsApp</Button>
-            </div>
-          </div>
-        </Card>
-      );
+          <div class="p-4 space-y-4 overflow-y-auto h-[calc(100%-56px)]" id="dw-body"></div>
+        </div>`;
+      document.body.appendChild(div);
+      div.querySelector('#drawer-backdrop').addEventListener('click', ()=> div.classList.add('hidden'));
+      div.querySelector('#dw-close').addEventListener('click', ()=> div.classList.add('hidden'));
     }
-
-    function ScreenHome(){
-      const destacados = PRODUCTS.filter(p=>p.destacados).slice(0,6);
-      return (
-        <div className="space-y-10">
-          {/* Hero */}
-          <Card className="overflow-hidden">
-            <div className="relative">
-              <SmartImg assetKey="FABRICA_BG" alt="Fábrica" className="absolute inset-0 w-full h-full object-cover" />
-              <div className="h-[42vh] md:h-[56vh]" />
-              <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/80 via-neutral-900/55 to-[#F07B39]/35" />
-              <div className="absolute inset-0 flex items-center">
-                <div className="px-6 md:px-10">
-                  <h1 className="text-3xl md:text-5xl font-extrabold text-white">Innovación y calidad desde 1970</h1>
-                  <p className="text-white/90 mt-3 text-base md:text-lg">Removedores, thinners y disolventes para la industria, la obra y el hogar.</p>
-                  <div className="mt-6 flex gap-3">
-                    <a href="#marcas" className="inline-flex"><Button>Descubrir marcas</Button></a>
-                    <a href="#contacto" className="inline-flex"><Button variant="outline">Contacto</Button></a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <DameroStrip className="rounded-xl overflow-hidden" />
-
-          {/* Marcas */}
-          <section id="marcas" className="space-y-4">
-            <h2 className="text-xl md:text-2xl font-bold">Nuestras marcas</h2>
-            <div className="grid md:grid-cols-3 gap-4">
-              <BrandCard brand={BRAND.IRAT} tagline="Soluciones de alto desempeño" />
-              <BrandCard brand={BRAND.Tinex} tagline="Eficiencia para cada aplicación" />
-              <BrandCard brand={BRAND.Roblex} tagline="Protección y acabado profesional" />
-            </div>
-          </section>
-
-          <DameroStrip className="rounded-xl overflow-hidden" />
-
-          {/* Productos */}
-          <section className="space-y-4">
-            <h2 className="text-xl md:text-2xl font-bold">Productos destacados</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {destacados.map(p => <ProductCard key={p.id} p={p} />)}
-            </div>
-          </section>
+    function openDrawer(p){
+      ensureDrawer();
+      const dw = document.getElementById('drawer');
+      dw.querySelector('#dw-title').textContent = p.name;
+      const body = dw.querySelector('#dw-body');
+      body.innerHTML = `
+        <div class="h-64 md:h-80 rounded-xl bg-white grid place-items-center overflow-hidden">
+          <img data-asset="${p.image}" alt="${p.name}" class="object-contain h-full w-auto"/>
         </div>
-      );
-    }
-
-    function Header(){
-      return (
-        <div className="sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white/95 border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 grid grid-cols-2 md:grid-cols-12 items-center gap-3">
-            <div className="col-span-6 md:col-span-3 flex items-center gap-3">
-              <SmartImg assetKey="HRSA_MARCA" alt="HRSA" className="h-12 md:h-14 w-auto" />
-              <span className="font-semibold hidden sm:block leading-tight">Hugo Rodríguez y\nCía. S.A.</span>
-            </div>
-            <nav className="col-span-6 md:col-span-9 flex justify-end gap-2 sm:gap-3 overflow-x-auto">
-              <a href="#inicio"><Button variant="solid">Inicio</Button></a>
-              <a href="#irat"><Button variant="outline">IRAT</Button></a>
-              <a href="#tinex"><Button variant="outline">Tinex</Button></a>
-              <a href="#roblex"><Button variant="outline">Roblex</Button></a>
-              <a href="#seguridad"><Button variant="outline">Seguridad</Button></a>
-              <a href="#contacto"><Button variant="outline">Contacto</Button></a>
-            </nav>
-          </div>
+        <div class="text-sm text-neutral-500">${p.brand} · ${p.category}</div>
+        <p class="text-neutral-700">${p.desc}</p>
+        <div class="flex flex-wrap gap-2">
+          ${p.usos.map(u=>`<span class="text-xs px-2 py-1 rounded-full bg-neutral-100 border">${u}</span>`).join('')}
+          ${p.presentaciones.map(u=>`<span class="text-xs px-2 py-1 rounded-full bg-neutral-100 border">${u}</span>`).join('')}
         </div>
-      );
-    }
-
-    function Seguridad(){
-      return (
-        <div id="seguridad" className="space-y-8 mt-10">
-          <Card>
-            <div className="h-32 bg-neutral-900 text-white grid place-items-center text-2xl font-bold relative">
-              <span>Seguridad</span>
-              <DameroStrip className="absolute bottom-0 left-0" />
-            </div>
-          </Card>
-          <Card><div className="p-4">
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-              <div>🛡️ EPP obligatorio: guantes, gafas y mascarilla adecuada.</div>
-              <div>⚠️ Ventilación: trabajar en espacios ventilados.</div>
-              <div>📦 Almacenamiento: envase original, lejos de calor.</div>
-            </div>
-          </div></Card>
-        </div>
-      );
-    }
-
-    function Contacto(){
-      return (
-        <section id="contacto" className="mt-10">
-          <Card className="overflow-hidden">
-            <div className="h-16 bg-gradient-to-r from-neutral-900 to-neutral-700 text-white grid place-items-center text-xl font-semibold">Contacto</div>
-            <div className="p-4 grid md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
-                <form onSubmit={(e)=>{e.preventDefault(); alert('¡Consulta enviada! (demo)')}} className="space-y-3">
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <label className="text-sm block"><span className="text-neutral-700">Nombre</span><input className="mt-1 w-full border rounded-xl px-3 py-2" required/></label>
-                    <label className="text-sm block"><span className="text-neutral-700">Email</span><input type="email" className="mt-1 w-full border rounded-xl px-3 py-2" required/></label>
-                    <label className="text-sm block sm:col-span-2"><span className="text-neutral-700">Mensaje</span><textarea className="mt-1 w-full border rounded-xl px-3 py-2 h-28" required/></label>
-                  </div>
-                  <Button type="submit">Enviar consulta</Button>
-                </form>
-              </div>
-              <div className="space-y-2 text-sm">
-                <div className="font-semibold">Datos</div>
-                <div>✉️ <a className="text-blue-600" href="mailto:info@hidraulicabande.com.ar">info@hidraulicabande.com.ar</a></div>
-                <div>📞 11 7524-5758</div>
-                <div>🕒 Lun–Vie 8–13 / 14–17 · Sáb 8–12:30</div>
-                <div>📍 Fray Cayetano Rodriguez 30, Los Polvorines</div>
-              </div>
-            </div>
-          </Card>
-        </section>
-      );
-    }
-
-    function App(){
-      return (
+        <div class="text-sm"><b>Rendimiento:</b> ${p.rendimiento}</div>
         <div>
-          <Header />
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pb-16">
-            <ScreenHome />
-            <Seguridad />
-            <Contacto />
-          </main>
-          <footer className="border-t py-4 text-center text-xs text-neutral-500">© {new Date().getFullYear()} HRSA. Todos los derechos reservados.</footer>
-          <a href="https://wa.me/541175245758?text=Hola%20HRSA%2C%20necesito%20asesoramiento" target="_blank" className="fixed bottom-4 right-4 md:bottom-6 md:right-6 w-12 h-12 rounded-full bg-green-500 grid place-items-center shadow-lg text-white text-xl">Ⓦ</a>
+          <div class="font-semibold mb-2">Seguridad</div>
+          <div class="flex gap-2 flex-wrap">
+            ${p.seguridad.map(s=>`<span class="text-xs px-2 py-1 rounded-full border">${s.toUpperCase()}</span>`).join('')}
+          </div>
         </div>
-      );
+        <div class="grid grid-cols-2 gap-2">
+          <a class="px-4 py-2 rounded-lg border bg-white text-center" href="#">Descargar ficha</a>
+          <a class="px-4 py-2 rounded-lg border bg-white text-center" href="#">Descargar HDS</a>
+        </div>
+        <div class="flex gap-2">
+          <a class="px-4 py-2 rounded-lg bg-[#F07B39] text-white" target="_blank" href="https://wa.me/541175245758?text=Hola%20HRSA%2C%20quiero%20consultar%20por%20${encodeURIComponent(p.name)}%20(marca%20${p.brand})">Consultar</a>
+          <a class="px-4 py-2 rounded-lg border bg-white" href="#contacto">Formulario</a>
+        </div>`;
+      applyAssets();
+      dw.classList.remove('hidden');
     }
 
-    ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+    function wireOpenButtons(){
+      document.querySelectorAll('[data-open]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const id = btn.getAttribute('data-open');
+          const p = PRODUCTS.find(x=>x.id===id);
+          if(p) openDrawer(p);
+        });
+      });
+    }
 
-    // ====== Smoke tests (console) ======
-    function _assert(c,m){ c? console.info('[TEST PASS]', m) : console.error('[TEST FAIL]', m); }
-    _assert(typeof PLACEHOLDER === 'string' && PLACEHOLDER.startsWith('data:image/svg+xml'), 'PLACEHOLDER válido');
-    _assert(Array.isArray(getAssetCandidates('IRAT_LOGO')), 'getAssetCandidates expone .div');
-    _assert(Array.isArray(PRODUCTS) && PRODUCTS.length >= 6, 'PRODUCTS seeded');
+    // ===== Init =====
+    document.getElementById('year').textContent = new Date().getFullYear();
+    renderHome();
+    renderBrandGrids();
+    renderHDS();
+    applyAssets();
+    wireOpenButtons();
+
+    // Si después agregás más productos dinámicamente, re-ejecutá applyAssets() + wireOpenButtons()
   </script>
 </body>
 </html>
