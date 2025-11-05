@@ -2,77 +2,142 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>HRSA — Prototype</title>
-
-  <!-- Tailwind (CDN) -->
+  <!-- Tailwind CDN (ok para demo; en prod usar build) -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body{background:#fafafa;color:#111827}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
 
-  <!-- React 18 + ReactDOM (UMD) -->
+  <!-- React 18 UMD + ReactDOM 18 UMD -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 
-  <!-- Babel Standalone para compilar JSX en runtime -->
+  <!-- Babel Standalone con presets React -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- (Opcional) framer-motion UMD
+  <script src="https://unpkg.com/framer-motion/dist/framer-motion.umd.js"></script> -->
 
-  <style>
-    /* micro animaciones para reemplazar framer-motion */
-    .fade-in { animation: fadeIn .35s ease-out both; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: translateY(0) } }
-  </style>
-</head>
-<body class="bg-neutral-50 text-neutral-900">
-  <div id="root"></div>
+  <script>
+    // Overrides opcionales (si querés cambiar las rutas de imágenes)
+    window.__HRSA_ASSETS = window.__HRSA_ASSETS || {};
+  </script>
 
-  <!-- App -->
-  <script type="text/babel">
-    const { useMemo, useState, useEffect } = React;
+  <!-- App: corre en el navegador con Babel, sin imports -->
+  <script type="text/babel" data-presets="react">
+    const { useMemo, useState } = React;
 
-    // ===== Placeholder inline (termina en ; para evitar errores)
-    const PLACEHOLDER =
-      "data:image/svg+xml;utf8," +
-      encodeURIComponent(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400"><rect width="100%" height="100%" fill="#e5e7eb"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#6b7280">Sin imagen</text></svg>'
-      );
+    // ===== Framer-motion shim robusto =====
+    // Evita "Element type is invalid: got undefined" cuando no está framer-motion.
+    const createMotionShim = () => {
+      const shim = {};
+      const tags = ["div", "section", "span", "main", "header", "footer"];
+      tags.forEach(tag => {
+        shim[tag] = ({ children, ...rest }) => React.createElement(tag, rest, children);
+      });
+      return shim;
+    };
+    let motion = createMotionShim();
+    let AnimatePresence = ({ children }) => <>{children}</>;
+    if (typeof window !== 'undefined' && window.framerMotion && window.framerMotion.motion) {
+      motion = window.framerMotion.motion;
+      AnimatePresence = window.framerMotion.AnimatePresence || AnimatePresence;
+    }
 
-    // ===== Assets (rutas relativas al index.html en GH Pages)
-    const ASSETS = {
-      HRSA_MARCA: "HRSAMarca.png",
-      IRAT_LOGO: "IRATMARCA.png",
-      ROBLEX_LOGO: "ROBLEXMARCA.png",
-      TINEX_LOGO: "TinexCian.png",
-      ROBLEX_BRIC: "BrickBritishx1.png",
-      IRAT_DM02: "DM02x1.png",
-      ROBLEX_HIDRO_CA: "HidroCaobax1.png",
-      IRAT_N4: "N4x1.png",
-      TINEX_20L: "TinexSYBx18.png",
-      TINEX_920: "TinexSYBx920.png",
+    /*
+      HRSA — Preview App (Interactive Prototype)
+      - Sin bundler, listo para GitHub Pages
+      - Tailwind vía CDN
+      - Imágenes desde ./assets con fallback a SVG inline
+    */
+
+    // ====== Placeholder (fallback inline) ======
+    const PLACEHOLDER = `data:image/svg+xml;utf8,${encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400"><rect width="100%" height="100%" fill="#e5e7eb"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#6b7280">Sin imagen</text></svg>'
+    )}`;
+
+    // ====== Assets (rutas relativas para ZIP/GitHub Pages) ======
+    const GH_BASE = "assets/"; // guardá los PNG/JPG en /assets a la par del index.html
+    const DEFAULT_ASSETS = {
+      ROBLEX_BRIC: `${GH_BASE}BrickBritishx1.png`,
+      IRAT_DM02: `${GH_BASE}DM02x1.png`,
+      ROBLEX_HIDRO_CA: `${GH_BASE}HidroCaobax1.png`,
+      HRSA_MARCA: `${GH_BASE}HRSAMarca.png`,
+      IRAT_LOGO: `${GH_BASE}IRATMARCA.png`,
+      IRAT_N4: `${GH_BASE}N4x1.png`,
+      ROBLEX_LOGO: `${GH_BASE}ROBLEXMARCA.png`,
+      TINEX_LOGO: `${GH_BASE}TinexCian.png`,
+      TINEX_20L: `${GH_BASE}TinexSYBx18.png`,
+      TINEX_920: `${GH_BASE}TinexSYBx920.png`,
+      FABRICA_BG: `${GH_BASE}entrada-fabrica.jpg`,
+      DAMERO: `${GH_BASE}DameroIRAT.png`,
     };
 
-    const getAsset = (k) => ASSETS[k] || "";
-    const imgOr = (key) => getAsset(key) || PLACEHOLDER;
+    function getAsset(key){
+      const overrides = (typeof window !== 'undefined' && window.__HRSA_ASSETS) || {};
+      return overrides[key] || DEFAULT_ASSETS[key];
+    }
+    function imgOr(key, fb){
+      const u = key ? getAsset(key) : undefined;
+      return (typeof u === 'string' && u.length > 0) ? u : fb;
+    }
 
-    // ===== Marcas
+    // ====== UI primitives ======
+    const Button = ({ className = "", children, onClick, variant = "default", as = "button", href, target, type }) => {
+      const base = "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition active:scale-[.98]";
+      const variants = {
+        default: "bg-[#F07B39] text-white hover:brightness-110",
+        outline: "border border-neutral-300 text-neutral-800 bg-white hover:bg-neutral-50",
+        ghost: "text-neutral-700 hover:bg-neutral-100",
+      };
+      const cls = `${base} ${variants[variant]} ${className}`;
+      if (as === "a") return (<a className={cls} href={href} target={target} rel={target === "_blank" ? "noopener" : undefined}>{children}</a>);
+      return <button className={cls} onClick={onClick} type={type}>{children}</button>;
+    };
+    const Card = ({ className = "", children }) => (
+      <div className={`rounded-2xl border border-neutral-200 bg-white shadow-sm ${className}`}>{children}</div>
+    );
+    const CardContent = ({ className = "", children }) => (
+      <div className={`p-4 ${className}`}>{children}</div>
+    );
+    const Chip = ({ selected, onClick, children }) => (
+      <button onClick={onClick} className={`px-3 py-1.5 rounded-full text-sm border transition ${selected ? "bg-neutral-900 text-white border-neutral-900" : "bg-white text-neutral-800 border-neutral-300 hover:bg-neutral-100"}`}>{children}</button>
+    );
+
+    // ====== Brand tokens ======
     const BRAND = {
-      IRAT:   { key: "IRAT",   color: "#000000", accent: "#F07B39", text: "#ffffff", logo: "IRAT_LOGO" },
-      Tinex:  { key: "Tinex",  color: "#00AEEF", accent: "#00AEEF", text: "#ffffff", logo: "TINEX_LOGO" },
-      Roblex: { key: "Roblex", color: "#004F3D", accent: "#367A64", text: "#ffffff", logo: "ROBLEX_LOGO" },
+      IRAT: { key: "IRAT", color: "#000000", accent: "#F07B39", text: "#ffffff" },
+      Tinex: { key: "Tinex", color: "#00AEEF", accent: "#00AEEF", text: "#ffffff" },
+      Roblex: { key: "Roblex", color: "#004F3D", accent: "#367A64", text: "#ffffff" },
     };
 
-    // ===== Productos
+    // ====== Mock data ======
     const PRODUCTS = [
-      { id: "irat-01", brand: "IRAT",   name: "IRAT Disolve Especial N°4", category: "Disolventes", usos: ["industria","obra"], presentaciones: ["1 L"],  rendimiento: "—",            seguridad: ["ghs02","ghs07"], desc: "Disolve especial para esmaltes horneables.", destacados: true, downloads: { ficha: true, hds: true }, image: "IRAT_N4" },
-      { id: "irat-02", brand: "IRAT",   name: "IRAT Thinner Universal DM-02", category: "Thinners",   usos: ["industria","automotriz"], presentaciones: ["1 L","20 L"], rendimiento: "—", seguridad: ["ghs02"], desc: "Thinner para esmaltes sintéticos.", destacados: true, downloads: { ficha: true, hds: true }, image: "IRAT_DM02" },
-      { id: "tinex-01", brand: "Tinex", name: "Tinex 20L",                  category: "Thinners",   usos: ["industria","madera"], presentaciones: ["20 L"], rendimiento: "—", seguridad: ["ghs02"], desc: "Para limpieza y dilución de pinturas sintéticas.", destacados: true, downloads: { ficha: true, hds: true }, image: "TINEX_20L" },
-      { id: "tinex-02", brand: "Tinex", name: "Tinex 920cc",                category: "Disolventes",usos: ["obra","hogar"], presentaciones: ["920 cc"], rendimiento: "—",    seguridad: ["ghs07"], desc: "Limpieza y dilución doméstica/pro.", destacados: false, downloads: { ficha: true, hds: true }, image: "TINEX_920" },
-      { id: "roblex-01", brand: "Roblex", name: "Roblex BRIC Ladrillos",    category: "Pinturas",   usos: ["obra"],                 presentaciones: ["1 L"], rendimiento: "—",    seguridad: ["ghs02"], desc: "Recubrimiento protector para ladrillos.", destacados: true, downloads: { ficha: true, hds: true }, image: "ROBLEX_BRIC" },
-      { id: "roblex-02", brand: "Roblex", name: "Roblex Hidrolaca Caoba",   category: "Barnices",   usos: ["madera","hogar"],       presentaciones: ["1 L"], rendimiento: "12–16 m²/L", seguridad: ["ghs07"], desc: "Laca para maderas flexible y perdurable.", destacados: true, downloads: { ficha: true, hds: true }, image: "ROBLEX_HIDRO_CA" },
+      { id: "irat-01", brand: "IRAT", name: "IRAT Disolve Especial N°4", category: "Disolventes", usos: ["industria", "obra"], presentaciones: ["1 L"], rendimiento: "—", seguridad: ["ghs02", "ghs07"], desc: "Disolve especial para esmaltes horneables.", destacados: true, downloads: { ficha: true, hds: true }, image: 'IRAT_N4' },
+      { id: "irat-02", brand: "IRAT", name: "IRAT Thinner Universal DM-02", category: "Thinners", usos: ["industria", "automotriz"], presentaciones: ["1 L", "20 L"], rendimiento: "—", seguridad: ["ghs02"], desc: "Thinner para esmaltes sintéticos.", destacados: true, downloads: { ficha: true, hds: true }, image: 'IRAT_DM02' },
+      { id: "tinex-01", brand: "Tinex", name: "Tinex 20L", category: "Thinners", usos: ["industria", "madera"], presentaciones: ["20 L"], rendimiento: "—", seguridad: ["ghs02"], desc: "Para limpieza y dilución de pinturas sintéticas.", destacados: true, downloads: { ficha: true, hds: true }, image: 'TINEX_20L' },
+      { id: "tinex-02", brand: "Tinex", name: "Tinex 920cc", category: "Disolventes", usos: ["obra", "hogar"], presentaciones: ["920 cc"], rendimiento: "—", seguridad: ["ghs07"], desc: "Limpieza y dilución doméstica/profesional.", destacados: false, downloads: { ficha: true, hds: true }, image: 'TINEX_920' },
+      { id: "roblex-01", brand: "Roblex", name: "Roblex BRIC Ladrillos", category: "Pinturas", usos: ["obra"], presentaciones: ["1 L"], rendimiento: "—", seguridad: ["ghs02"], desc: "Recubrimiento protector para ladrillos.", destacados: true, downloads: { ficha: true, hds: true }, image: 'ROBLEX_BRIC' },
+      { id: "roblex-02", brand: "Roblex", name: "Roblex Hidrolaca Caoba", category: "Barnices", usos: ["madera", "hogar"], presentaciones: ["1 L"], rendimiento: "12–16 m²/L", seguridad: ["ghs07"], desc: "Laca para maderas flexible y perdurable.", destacados: true, downloads: { ficha: true, hds: true }, image: 'ROBLEX_HIDRO_CA' },
     ];
 
-    const uniq = (arr) => Array.from(new Set(arr));
-    const allUsos = uniq(PRODUCTS.flatMap(p => p.usos));
-    const allPres = uniq(PRODUCTS.flatMap(p => p.presentaciones));
+    const GOOD_PRACTICES = [
+      { icon: "🛡️", title: "EPP obligatorio", text: "Usar guantes, gafas y mascarilla adecuada." },
+      { icon: "⚠️", title: "Ventilación", text: "Trabajar en espacios ventilados o con extracción." },
+      { icon: "📦", title: "Almacenamiento", text: "Conservar en envase original, lejos de calor y chispas." },
+      { icon: "📞", title: "Emergencias", text: "Acudir a centros de asistencia y seguir HDS." },
+    ];
 
+    // ====== Utilities ======
+    const uniq = (arr) => Array.from(new Set(arr));
+    const allUsos = uniq(PRODUCTS.flatMap((p) => p.usos));
+    const allPresentaciones = uniq(PRODUCTS.flatMap((p) => p.presentaciones));
+
+    // ====== App shell ======
     const NAV = [
       { id: "home", label: "Inicio" },
       { id: "irat", label: "IRAT" },
@@ -82,55 +147,48 @@
       { id: "contacto", label: "Contacto" },
     ];
 
-    // -------- UI
-    const Button = ({ className="", children, onClick, as="button", href, target, variant="default", type }) => {
-      const base = "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition active:scale-[.98]";
-      const variants = {
-        default: "bg-[#F07B39] text-white hover:brightness-110",
-        outline: "border border-neutral-300 text-neutral-800 bg-white hover:bg-neutral-50",
-        ghost: "text-neutral-700 hover:bg-neutral-100",
-      };
-      const cls = base + " " + (variants[variant] || "") + " " + className;
-      if (as === "a") return <a className={cls} href={href} target={target} rel={target==="_blank"?"noopener":undefined}>{children}</a>;
-      return <button className={cls} onClick={onClick} type={type}>{children}</button>;
-    };
-
-    const Card = ({ className="", children }) => <div className={"rounded-2xl border border-neutral-200 bg-white shadow-sm " + className}>{children}</div>;
-    const CardContent = ({ className="", children }) => <div className={"p-4 "+className}>{children}</div>;
-    const Chip = ({ selected, onClick, children }) =>
-      <button onClick={onClick} className={"px-3 py-1.5 rounded-full text-sm border transition " + (selected ? "bg-neutral-900 text-white border-neutral-900" : "bg-white text-neutral-800 border-neutral-300 hover:bg-neutral-100")}>{children}</button>;
-
-    // -------- App
-    function App(){
+    function HRSAApp(){
       const [route, setRoute] = useState("home");
       const [productOpen, setProductOpen] = useState(null);
       const [search, setSearch] = useState("");
-      const [fUso, setFUso] = useState([]);
-      const [fPres, setFPres] = useState([]);
-
+      const [filtUso, setFiltUso] = useState([]);
+      const [filtPres, setFiltPres] = useState([]);
+      const openProduct = (id) => setProductOpen(id);
+      const closeProduct = () => setProductOpen(null);
       const goto = (id) => {
-        if(id==="contacto"){
+        if (id === "contacto") {
           const el = document.getElementById("contacto-section");
           if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
           return;
         }
-        setRoute(id); setSearch(""); setFUso([]); setFPres([]); setProductOpen(null);
+        setRoute(id); setSearch(""); setFiltUso([]); setFiltPres([]); setProductOpen(null);
       };
 
       return (
-        <div className="min-h-screen">
+        <div className="min-h-screen bg-neutral-50 text-neutral-900" style={{fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif'}}>
           <Header onNav={goto} active={route} />
           <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pb-16">
-            {route==="home"      && <ScreenHome onViewBrands={()=>goto("irat")} onOpenProduct={setProductOpen} />}
-            {route==="irat"      && <ScreenBrand brand={BRAND.IRAT}   onOpenProduct={setProductOpen} search={search} setSearch={setSearch} fUso={fUso} setFUso={setFUso} fPres={fPres} setFPres={setFPres} />}
-            {route==="tinex"     && <ScreenBrand brand={BRAND.Tinex}  onOpenProduct={setProductOpen} search={search} setSearch={setSearch} fUso={fUso} setFUso={setFUso} fPres={fPres} setFPres={setFPres} />}
-            {route==="roblex"    && <ScreenBrand brand={BRAND.Roblex} onOpenProduct={setProductOpen} search={search} setSearch={setSearch} fUso={fUso} setFUso={setFUso} fPres={fPres} setFPres={setFPres} />}
-            {route==="seguridad" && <ScreenSeguridad/>}
+            <AnimatePresence mode="wait">
+              {route === "home" && (
+                <ScreenHome key="home" onViewBrands={() => goto("irat")} onOpenProduct={openProduct} />
+              )}
+              {route === "irat" && (
+                <ScreenBrand key="irat" brand={BRAND.IRAT} onOpenProduct={openProduct} search={search} setSearch={setSearch} filtUso={filtUso} setFiltUso={setFiltUso} filtPres={filtPres} setFiltPres={setFiltPres} />
+              )}
+              {route === "tinex" && (
+                <ScreenBrand key="tinex" brand={BRAND.Tinex} onOpenProduct={openProduct} search={search} setSearch={setSearch} filtUso={filtUso} setFiltUso={setFiltUso} filtPres={filtPres} setFiltPres={setFiltPres} />
+              )}
+              {route === "roblex" && (
+                <ScreenBrand key="roblex" brand={BRAND.Roblex} onOpenProduct={openProduct} search={search} setSearch={setSearch} filtUso={filtUso} setFiltUso={setFiltUso} filtPres={filtPres} setFiltPres={setFiltPres} />
+              )}
+              {route === "seguridad" && <ScreenSeguridad key="seg" />}
+              {route === "legales" && <ScreenLegales key="leg" />}
+            </AnimatePresence>
           </main>
-          <GlobalContact/>
-          <ProductDrawer openId={productOpen} onClose={()=>setProductOpen(null)} />
-          <WhatsAppFab/>
-          <Footer onNav={goto}/>
+          <GlobalContact />
+          <ProductDrawer openId={productOpen} onClose={closeProduct} />
+          <WhatsAppFab />
+          <Footer onNav={goto} />
         </div>
       );
     }
@@ -140,12 +198,12 @@
         <div className="sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white/95 border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 grid grid-cols-2 md:grid-cols-12 items-center gap-3">
             <div className="col-span-6 md:col-span-3 flex items-center gap-3">
-              <img src={imgOr("HRSA_MARCA")} alt="HRSA" className="h-12 md:h-14 w-auto" onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
-              <span className="font-semibold hidden sm:block leading-tight">Hugo Rodríguez<br/>y Cía. S.A.</span>
+              <img src={getAsset('HRSA_MARCA') || PLACEHOLDER} alt="HRSA" className="h-12 md:h-14 w-auto" onError={(e)=>{e.currentTarget.src=PLACEHOLDER;}}/>
+              <span className="font-semibold hidden sm:block leading-tight">Hugo Rodríguez y<br/>Cía. S.A.</span>
             </div>
             <nav className="col-span-6 md:col-span-9 flex justify-end gap-2 sm:gap-3 overflow-x-auto">
-              {NAV.map(n => (
-                <Button key={n.id} variant={active===n.id?"default":"outline"} onClick={()=>onNav(n.id)} className="whitespace-nowrap">{n.label}</Button>
+              {NAV.map((n) => (
+                <Button key={n.id} variant={active === n.id ? "default" : "outline"} onClick={() => onNav(n.id)} className="whitespace-nowrap" data-nav={n.id}>{n.label}</Button>
               ))}
             </nav>
           </div>
@@ -153,14 +211,20 @@
       );
     }
 
-    function ScreenHome({ onViewBrands, onOpenProduct }){
-      const destacados = PRODUCTS.filter(p=>p.destacados).slice(0,6);
+    function DameroStrip({ className = ""}){
+      const src = getAsset('DAMERO') || PLACEHOLDER;
+      return (<div className={`w-full h-6 bg-repeat-x ${className}`} style={{ backgroundImage: `url(${src})`, backgroundSize: 'auto 100%' }} />);
+    }
+
+    function ScreenHome({ onViewBrands, onOpenProduct }) {
+      const destacados = PRODUCTS.filter((p) => p.destacados).slice(0,6);
       return (
-        <div className="space-y-10 fade-in">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-10">
           <Card className="overflow-hidden">
             <div className="relative">
-              <div className="h-[42vh] md:h-[56vh] bg-gradient-to-r from-neutral-800 to-neutral-700" />
-              <div className="absolute inset-0 bg-black/30" />
+              <img src={getAsset('FABRICA_BG') || PLACEHOLDER} alt="Fábrica" className="absolute inset-0 w-full h-full object-cover" onError={(e)=>{e.currentTarget.src=PLACEHOLDER;}}/>
+              <div className="h-[42vh] md:h-[56vh]" />
+              <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/80 via-neutral-900/55 to-[#F07B39]/35" />
               <div className="absolute inset-0 flex items-center">
                 <div className="px-6 md:px-10">
                   <h1 className="text-3xl md:text-5xl font-extrabold text-white">Innovación y calidad desde 1970</h1>
@@ -174,72 +238,98 @@
             </div>
           </Card>
 
+          <DameroStrip className="rounded-xl overflow-hidden" />
+
           <section className="space-y-4">
             <h2 className="text-xl md:text-2xl font-bold">Nuestras marcas</h2>
             <div className="grid md:grid-cols-3 gap-4">
-              <BrandCard brand={BRAND.IRAT}   tagline="Soluciones de alto desempeño" />
-              <BrandCard brand={BRAND.Tinex}  tagline="Eficiencia para cada aplicación" />
+              <BrandCard brand={BRAND.IRAT} tagline="Soluciones de alto desempeño" />
+              <BrandCard brand={BRAND.Tinex} tagline="Eficiencia para cada aplicación" />
               <BrandCard brand={BRAND.Roblex} tagline="Protección y acabado profesional" />
             </div>
           </section>
 
+          <DameroStrip className="rounded-xl overflow-hidden" />
+
           <section className="space-y-4">
-            <div className="flex items-center gap-3">
-              <h2 className="text-xl md:text-2xl font-bold">Productos destacados</h2>
-              <span className="text-neutral-500">★</span>
-            </div>
+            <h2 className="text-xl md:text-2xl font-bold">Productos destacados</h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {destacados.map(p => <ProductCard key={p.id} p={p} onOpen={()=>onOpenProduct(p.id)}/>)}
+              {destacados.map((p) => (
+                <ProductCard key={p.id} p={p} onOpen={() => onOpenProduct(p.id)} />
+              ))}
             </div>
           </section>
-        </div>
+
+          <section className="space-y-4">
+            <h2 className="text-xl md:text-2xl font-bold">Por qué elegirnos</h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Strength title="Calidad" text="Procesos controlados y estándares exigentes." />
+              <Strength title="Experiencia" text="Más de 50 años en el mercado." />
+              <Strength title="Innovación" text="Mejoras constantes en formulación." />
+              <Strength title="Confianza" text="Acompañamiento técnico y postventa." />
+            </div>
+          </section>
+        </motion.div>
       );
     }
 
-    function BrandCard({ brand, tagline }){
+    function BrandCard({ brand, tagline }) {
       return (
-        <Card className="overflow-hidden fade-in">
-          <div className="h-32 relative overflow-hidden" style={{ background: brand.color }}>
-            <div className="absolute inset-0 grid place-items-center">
-              <img src={imgOr(brand.logo)} alt={brand.key+" logo"} className="h-16 md:h-20 opacity-95" onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
-            </div>
+        <Card className="overflow-hidden">
+          <div className="h-32 relative overflow-hidden flex items-center justify-center" style={{ background: brand.color }}>
+            <img src={brand.key==='IRAT'?getAsset('IRAT_LOGO')||PLACEHOLDER:brand.key==='Tinex'?getAsset('TINEX_LOGO')||PLACEHOLDER:getAsset('ROBLEX_LOGO')||PLACEHOLDER} alt={`${brand.key} logo`} className="h-16 md:h-20 opacity-90" onError={(e)=>{e.currentTarget.src=PLACEHOLDER; console.warn('Logo no cargó:', brand.key);}}/>
           </div>
           <CardContent className="flex items-center justify-between">
             <div>
               <div className="text-lg font-bold">{brand.key}</div>
               <div className="text-sm text-neutral-600">{tagline}</div>
             </div>
-            <Button className="group" onClick={()=> {
-              const id = brand.key.toLowerCase();
-              document.querySelector("nav").querySelectorAll("button").forEach(btn => {
-                if (btn.textContent.trim() === brand.key) btn.click();
-              });
-            }}>
-              Ver más <span className="ml-1 group-hover:translate-x-0.5 transition">›</span>
+            <Button onClick={() => document.querySelector(`[data-nav="${brand.key.toLowerCase()}"]`)?.dispatchEvent(new MouseEvent('click', {bubbles:true}))} className="group">
+              Ver más <span className="ml-1">›</span>
             </Button>
           </CardContent>
         </Card>
       );
     }
 
-    function ScreenBrand({ brand, onOpenProduct, search, setSearch, fUso, setFUso, fPres, setFPres }){
-      const catsByBrand = uniq(PRODUCTS.filter(p=>p.brand===brand.key).map(p=>p.category));
-      const filtered = useMemo(()=>{
-        return PRODUCTS
-          .filter(p=>p.brand===brand.key)
-          .filter(p=>!search || p.name.toLowerCase().includes(search.toLowerCase()))
-          .filter(p=>!fUso.length || fUso.every(u => p.usos.includes(u)))
-          .filter(p=>!fPres.length || fPres.every(x => p.presentaciones.includes(x)));
-      }, [brand.key, search, fUso, fPres]);
+    const Strength = ({ title, text }) => (
+      <Card>
+        <CardContent>
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5">✅</span>
+            <div>
+              <div className="font-semibold">{title}</div>
+              <p className="text-sm text-neutral-600">{text}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
 
-      const toggle = (val, arr, setArr) => setArr(arr.includes(val) ? arr.filter(v=>v!==val) : [...arr, val]);
+    function ScreenBrand({ brand, onOpenProduct, search, setSearch, filtUso, setFiltUso, filtPres, setFiltPres }) {
+      const catsByBrand = uniq(PRODUCTS.filter((p)=>p.brand===brand.key).map((p)=>p.category));
+
+      const filtered = React.useMemo(() => {
+        return PRODUCTS.filter((p) => p.brand === brand.key)
+          .filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()))
+          .filter((p) => !filtUso.length || filtUso.every((u) => p.usos.includes(u)))
+          .filter((p) => !filtPres.length || filtPres.every((pr) => p.presentaciones.includes(pr)));
+      }, [brand.key, search, filtUso, filtPres]);
+
+      const toggle = (val, arr, setArr) => setArr(arr.includes(val) ? arr.filter((v)=>v!==val) : [...arr, val]);
 
       return (
-        <div className="space-y-8 fade-in">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-8">
           <Card className="overflow-hidden">
             <div className="h-48 md:h-64 relative" style={{ background: brand.color }}>
-              <div className="absolute inset-0 grid place-items-center">
-                <img src={imgOr(brand.logo)} alt={brand.key+" logo"} className="h-20 md:h-28 opacity-95" onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
+              <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle,_black_1px,_transparent_1px)] [background-size:16px_16px]" />
+              <div className="absolute inset-0 flex items-center px-6 md:px-10">
+                <div>
+                  <div className="text-white/90 text-sm">Marca</div>
+                  <h2 className="text-3xl md:text-5xl font-extrabold" style={{ color: brand.text }}>{brand.key}</h2>
+                  <img src={brand.key==='IRAT'?getAsset('IRAT_LOGO')||PLACEHOLDER:brand.key==='Tinex'?getAsset('TINEX_LOGO')||PLACEHOLDER:getAsset('ROBLEX_LOGO')||PLACEHOLDER} alt={brand.key + ' logo'} className="h-20 md:h-28 mt-3 opacity-95" onError={(e)=>{e.currentTarget.src=PLACEHOLDER;}}/>
+                  <Button className="mt-4" variant="outline">Ver catálogo</Button>
+                </div>
               </div>
             </div>
           </Card>
@@ -250,61 +340,59 @@
             </CardContent></Card>
             <Card><CardContent>
               <div className="font-semibold mb-2">Categorías</div>
-              <div className="flex flex-wrap gap-2">{catsByBrand.map(c => <Chip key={c}>{c}</Chip>)}</div>
+              <div className="flex flex-wrap gap-2">
+                {catsByBrand.map((c) => <Chip key={c}>{c}</Chip>)}
+              </div>
             </CardContent></Card>
           </div>
 
-          <Card><CardContent>
-            <div className="flex flex-col md:flex-row md:items-center gap-3">
-              <div className="flex items-center gap-2 flex-1">
-                <input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Buscar productos..." className="w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300" />
+          <Card>
+            <CardContent>
+              <div className="flex flex-col md:flex-row md:items-center gap-3">
+                <div className="flex items-center gap-2 flex-1">
+                  <input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Buscar productos..." className="w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300" />
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {allUsos.map((u) => (
+                    <Chip key={u} selected={filtUso.includes(u)} onClick={()=>toggle(u, filtUso, setFiltUso)}>{u}</Chip>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {allPresentaciones.map((p) => (
+                    <Chip key={p} selected={filtPres.includes(p)} onClick={()=>toggle(p, filtPres, setFiltPres)}>{p}</Chip>
+                  ))}
+                </div>
+                {(filtUso.length || filtPres.length || search) && (
+                  <Button variant="ghost" onClick={()=>{setSearch(""); setFiltUso([]); setFiltPres([]);}}>Limpiar</Button>
+                )}
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {allUsos.map(u => <Chip key={u} selected={fUso.includes(u)} onClick={()=>toggle(u,fUso,setFUso)}>{u}</Chip>)}
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {allPres.map(p => <Chip key={p} selected={fPres.includes(p)} onClick={()=>toggle(p,fPres,setFPres)}>{p}</Chip>)}
-              </div>
-              {(fUso.length || fPres.length || search) && <Button variant="ghost" onClick={()=>{setSearch("");setFUso([]);setFPres([]);}}>Limpiar</Button>}
-            </div>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map(p => <ProductCard key={p.id} p={p} onOpen={()=>onOpenProduct(p.id)} />)}
-            {!filtered.length && <Card className="col-span-full"><CardContent><div className="text-neutral-600">No hay productos que coincidan con los filtros.</div></CardContent></Card>}
+            {filtered.map((p) => (
+              <ProductCard key={p.id} p={p} onOpen={() => onOpenProduct(p.id)} />
+            ))}
+            {!filtered.length && (
+              <Card className="col-span-full"><CardContent>
+                <div className="text-neutral-600">No hay productos que coincidan con los filtros.</div>
+              </CardContent></Card>
+            )}
           </div>
-
-          <Card><CardContent>
-            <div className="font-semibold mb-3">Descargas</div>
-            <div className="overflow-auto">
-              <table className="min-w-full text-sm">
-                <thead><tr className="text-left text-neutral-500"><th className="py-2 pr-4">Producto</th><th className="py-2 pr-4">Ficha técnica</th><th className="py-2 pr-4">HDS / MSDS</th></tr></thead>
-                <tbody>
-                  {PRODUCTS.filter(p=>p.brand===brand.key).map(p=>(
-                    <tr key={p.id} className="border-t">
-                      <td className="py-2 pr-4">{p.name}</td>
-                      <td className="py-2 pr-4 text-blue-600"><a href="#">PDF</a></td>
-                      <td className="py-2 pr-4 text-blue-600"><a href="#">PDF</a></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent></Card>
-        </div>
+        </motion.div>
       );
     }
 
-    function ProductCard({ p, onOpen }){
+    function ProductCard({ p, onOpen }) {
       return (
         <Card className="hover:shadow-md transition">
-          <div className="h-64 md:h-72 rounded-t-2xl bg-white grid place-items-center overflow-hidden">
-            <img src={imgOr(p.image)} alt={p.name} className="object-contain max-h-56 md:max-h-64 w-auto" onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
-          </div>
+          <div className="h-64 md:h-72 rounded-t-2xl bg-white grid place-items-center overflow-hidden"><img src={imgOr(p.image, PLACEHOLDER)} alt={p.name} className="object-contain max-h-56 md:max-h-64 w-auto" onError={(e)=>{e.currentTarget.src = PLACEHOLDER; }}/></div>
           <CardContent>
             <div className="text-xs text-neutral-500">{p.brand} · {p.category}</div>
             <div className="font-semibold mt-1">{p.name}</div>
-            <div className="mt-2 flex flex-wrap gap-1">{p.usos.map(u => <span key={u} className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 border">{u}</span>)}</div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {p.usos.map((u) => <span key={u} className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 border">{u}</span>)}
+            </div>
             <div className="mt-3 flex justify-between items-center">
               <Button onClick={onOpen} variant="outline">Ver producto</Button>
               <Button as="a" href={`https://wa.me/541175245758?text=Hola%20HRSA%2C%20quiero%20consultar%20por%20${encodeURIComponent(p.name)}%20(marca%20${p.brand})`} target="_blank">WhatsApp</Button>
@@ -314,56 +402,104 @@
       );
     }
 
-    function ProductDrawer({ openId, onClose }){
-      const p = PRODUCTS.find(x => x.id === openId);
-      if (!p) return null;
+    function ProductDrawer({ openId, onClose }) {
+      const p = PRODUCTS.find((x) => x.id === openId);
       return (
-        <div className="fixed inset-0 z-[60]">
-          <div className="absolute inset-0 bg-black/40" onClick={onClose}></div>
-          <div className="absolute right-0 top-0 h-full w-full sm:w-[480px] bg-white shadow-2xl fade-in">
-            <div className="p-4 border-b flex items-center justify-between">
-              <div className="font-semibold">{p.name}</div>
-              <Button variant="ghost" onClick={onClose}>Cerrar</Button>
-            </div>
-            <div className="p-4 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
-              <div className="h-64 md:h-80 rounded-xl bg-white grid place-items-center overflow-hidden">
-                <img src={imgOr(p.image)} alt={p.name} className="object-contain max-h-64 md:max-h-72 w-auto" onError={(e)=>e.currentTarget.src=PLACEHOLDER}/>
-              </div>
-              <div className="text-sm text-neutral-500">{p.brand} · {p.category}</div>
-              <p className="text-neutral-700">{p.desc}</p>
-              <div className="flex flex-wrap gap-2">
-                {p.usos.map(u => <span key={u} className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">{u}</span>)}
-                {p.presentaciones.map(u => <span key={u} className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">{u}</span>)}
-              </div>
-              <div className="text-sm"><b>Rendimiento:</b> {p.rendimiento}</div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button as="a" variant="outline" href="#">Ficha técnica</Button>
-                <Button as="a" variant="outline" href="#">HDS / MSDS</Button>
-              </div>
-              <div className="flex gap-2">
-                <Button as="a" href={`https://wa.me/541175245758?text=Hola%20HRSA%2C%20quiero%20consultar%20por%20${encodeURIComponent(p.name)}%20(marca%20${p.brand})`} target="_blank">Consultar</Button>
-                <Button variant="outline" as="a" href="#contacto-form">Formulario</Button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AnimatePresence>
+          {p && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60]">
+              <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+              <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", stiffness: 260, damping: 26 }} className="absolute right-0 top-0 h-full w-full sm:w-[480px] bg-white shadow-2xl">
+                <div className="p-4 border-b flex items-center justify-between">
+                  <div className="font-semibold">{p.name}</div>
+                  <Button variant="ghost" onClick={onClose}>✖️</Button>
+                </div>
+                <div className="p-4 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
+                  <div className="h-64 md:h-80 rounded-xl bg-white grid place-items-center overflow-hidden"><img src={imgOr(p.image, PLACEHOLDER)} alt={p.name} className="object-contain h-full w-auto" onError={(e)=>{e.currentTarget.src = PLACEHOLDER; }}/></div>
+                  <div className="text-sm text-neutral-500">{p.brand} · {p.category}</div>
+                  <p className="text-neutral-700">{p.desc}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {p.usos.map((u) => <span key={u} className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">{u}</span>)}
+                    {p.presentaciones.map((u) => <span key={u} className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">{u}</span>)}
+                  </div>
+                  <div className="text-sm"><b>Rendimiento:</b> {p.rendimiento}</div>
+                  <div>
+                    <div className="font-semibold mb-2">Seguridad</div>
+                    <div className="flex gap-2 flex-wrap">
+                      {p.seguridad.map((s, i) => <span key={i} className="text-xs px-2 py-1 rounded-full border">{s.toUpperCase()}</span>)}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button as="a" variant="outline" href="#">Descargar ficha</Button>
+                    <Button as="a" variant="outline" href="#">Descargar HDS</Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button as="a" href={`https://wa.me/541175245758?text=Hola%20HRSA%2C%20quiero%20consultar%20por%20${encodeURIComponent(p.name)}%20(marca%20${p.brand})`} target="_blank">Consultar</Button>
+                    <Button variant="outline" as="a" href="#contacto-form">Formulario</Button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       );
     }
 
-    function ScreenSeguridad(){
-      const items = [
-        { t: "EPP obligatorio", d: "Usar guantes, gafas y mascarilla adecuada." },
-        { t: "Ventilación", d: "Trabajar en espacios ventilados o con extracción." },
-        { t: "Almacenamiento", d: "Envase original, lejos de calor y chispas." },
-        { t: "Emergencias", d: "Acudir a centros de asistencia y seguir HDS." },
-      ];
+    function ScreenSeguridad() {
       return (
-        <div className="space-y-8 fade-in">
-          <Card><div className="h-32 bg-neutral-900 text-white grid place-items-center text-2xl font-bold rounded-2xl">Seguridad</div></Card>
-          <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {items.map((g,i)=>(<Card key={i}><CardContent><div className="font-semibold">{g.t}</div><p className="text-sm text-neutral-600">{g.d}</p></CardContent></Card>))}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-8">
+          <Card>
+            <div className="h-32 bg-neutral-900 text-white grid place-items-center text-2xl font-bold relative">
+              <span>Seguridad</span>
+              <DameroStrip className="absolute bottom-0 left-0" />
+            </div>
+          </Card>
+          <section className="space-y-4">
+            <h3 className="text-xl font-semibold">Buenas prácticas</h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {GOOD_PRACTICES.map((g, i) => (
+                <Card key={i}><CardContent>
+                  <div className="flex items-start gap-3">
+                    <span className="w-5 h-5">{g.icon}</span>
+                    <div>
+                      <div className="font-semibold">{g.title}</div>
+                      <p className="text-sm text-neutral-600">{g.text}</p>
+                    </div>
+                  </div>
+                </CardContent></Card>
+              ))}
+            </div>
           </section>
-        </div>
+          <section className="space-y-4">
+            <h3 className="text-xl font-semibold">Índice de HDS/MSDS</h3>
+            <Card>
+              <CardContent>
+                <div className="overflow-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-neutral-500">
+                        <th className="py-2 pr-4">Producto</th>
+                        <th className="py-2 pr-4">Marca</th>
+                        <th className="py-2 pr-4">HDS</th>
+                        <th className="py-2 pr-4">Ficha técnica</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {PRODUCTS.map((p) => (
+                        <tr key={p.id} className="border-t">
+                          <td className="py-2 pr-4">{p.name}</td>
+                          <td className="py-2 pr-4">{p.brand}</td>
+                          <td className="py-2 pr-4 text-blue-600"><a href="#">PDF</a></td>
+                          <td className="py-2 pr-4 text-blue-600"><a href="#">PDF</a></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        </motion.div>
       );
     }
 
@@ -375,7 +511,7 @@
             <CardContent>
               <div className="grid md:grid-cols-3 gap-4" id="contacto-form">
                 <div className="md:col-span-2">
-                  <form onSubmit={(e)=>{ e.preventDefault(); alert("¡Consulta enviada! (demo)"); }} className="space-y-3">
+                  <form onSubmit={(e)=>{e.preventDefault(); alert("¡Consulta enviada! (demo)");}} className="space-y-3">
                     <div className="grid sm:grid-cols-2 gap-3">
                       <Input label="Nombre" required />
                       <Input label="Email" type="email" required />
@@ -384,7 +520,7 @@
                       <Select label="Marca" options={["IRAT","Tinex","Roblex"]} />
                       <Input label="Producto (opcional)" placeholder="Ej: IRAT Thinner X" />
                       <Textarea label="Mensaje" className="sm:col-span-2" required />
-                      <label className="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" required/> Acepto la Política de Privacidad</label>
+                      <label className="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" required /> Acepto la Política de Privacidad</label>
                     </div>
                     <div className="flex gap-3">
                       <Button type="submit">Enviar consulta</Button>
@@ -395,10 +531,10 @@
                 <div className="space-y-4">
                   <div>
                     <div className="font-semibold mb-2">Datos</div>
-                    <div className="text-sm">Email: <a className="text-blue-600" href="mailto:info@hidraulicabande.com.ar">info@hidraulicabande.com.ar</a></div>
-                    <div className="text-sm">Tel: 11 7524-5758</div>
-                    <div className="text-sm">Horario: Lun–Vie 8–13 / 14–17 · Sáb 8–12:30</div>
-                    <div className="text-sm">Dirección: Fray Cayetano Rodriguez 30, Los Polvorines</div>
+                    <div className="flex items-center gap-2 text-sm">✉️ info@hidraulicabande.com.ar</div>
+                    <div className="flex items-center gap-2 text-sm">📞 11 7524-5758</div>
+                    <div className="flex items-center gap-2 text-sm">🕒 Lun–Vie 8–13 / 14–17 · Sáb 8–12:30</div>
+                    <div className="flex items-center gap-2 text-sm">📍 Fray Cayetano Rodriguez 30, Los Polvorines</div>
                   </div>
                   <div>
                     <div className="font-semibold mb-2">Mapa</div>
@@ -412,18 +548,62 @@
       );
     }
 
-    function Input({ label, className="", ...props }){
-      return (<label className={"text-sm block "+className}><span className="text-neutral-700">{label}</span><input {...props} className="mt-1 w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300"/></label>);
-    }
-    function Textarea({ label, className="", ...props }){
-      return (<label className={"text-sm block "+className}><span className="text-neutral-700">{label}</span><textarea {...props} className="mt-1 w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300 h-28"/></label>);
-    }
-    function Select({ label, options=[], className="", ...props }){
-      return (<label className={"text-sm block "+className}><span className="text-neutral-700">{label}</span><select {...props} className="mt-1 w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300"><option value="">Seleccionar…</option>{options.map(o => <option key={o} value={o}>{o}</option>)}</select></label>);
+    function ScreenLegales() {
+      const [open, setOpen] = React.useState(null);
+      const Item = ({ id, title, children }) => (
+        <Card>
+          <button className="w-full text-left" onClick={()=> setOpen(open===id? null : id)}>
+            <CardContent className="flex items-center justify-between">
+              <div className="font-semibold">{title}</div>
+              <span className={`w-4 h-4 transition ${open===id? "rotate-90" : ""}`}>›</span>
+            </CardContent>
+          </button>
+          <AnimatePresence>{open===id && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
+              <div className="px-4 pb-4 text-sm text-neutral-700">{children}</div>
+            </motion.div>
+          )}</AnimatePresence>
+        </Card>
+      );
+      return (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
+          <Item id="t" title="Términos de uso">Contenido de ejemplo de términos de uso.</Item>
+          <Item id="p" title="Política de Privacidad">Contenido de ejemplo de privacidad.</Item>
+          <Item id="c" title="Cookies">Contenido de ejemplo de cookies y preferencias.</Item>
+        </motion.div>
+      );
     }
 
-    function Footer({ onNav }){
-      const goContact = (e)=>{ e.preventDefault(); const el = document.getElementById("contacto-section"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); };
+    function Input({ label, className = "", ...props }) {
+      return (
+        <label className={`text-sm block ${className}`}>
+          <span className="text-neutral-700">{label}</span>
+          <input {...props} className="mt-1 w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300" />
+        </label>
+      );
+    }
+    function Textarea({ label, className = "", ...props }) {
+      return (
+        <label className={`text-sm block ${className}`}>
+          <span className="text-neutral-700">{label}</span>
+          <textarea {...props} className="mt-1 w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300 h-28" />
+        </label>
+      );
+    }
+    function Select({ label, options = [], className = "", ...props }) {
+      return (
+        <label className={`text-sm block ${className}`}>
+          <span className="text-neutral-700">{label}</span>
+          <select {...props} className="mt-1 w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-300">
+            <option value="">Seleccionar…</option>
+            {options.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </label>
+      );
+    }
+
+    function Footer({ onNav }) {
+      const goContact = (e) => { e.preventDefault(); const el = document.getElementById("contacto-section"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); };
       return (
         <footer className="border-t bg-white mt-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-8 grid sm:grid-cols-2 md:grid-cols-4 gap-6 text-sm">
@@ -439,15 +619,15 @@
                 <li><a href="#" onClick={(e)=>{e.preventDefault(); onNav("tinex");}}>Tinex</a></li>
                 <li><a href="#" onClick={(e)=>{e.preventDefault(); onNav("roblex");}}>Roblex</a></li>
                 <li><a href="#" onClick={(e)=>{e.preventDefault(); onNav("seguridad");}}>Seguridad</a></li>
-                <li><a href="#" onClick={goContact}>Contacto</a></li>
+                <li><a href="#" onClick={(e)=>{e.preventDefault(); onNav("contacto");}}>Contacto</a></li>
               </ul>
             </div>
             <div>
               <div className="font-semibold mb-2">Legales</div>
               <ul className="space-y-1">
-                <li><a href="#">Términos</a></li>
-                <li><a href="#">Privacidad</a></li>
-                <li><a href="#">Cookies</a></li>
+                <li><a href="#" onClick={(e)=>{e.preventDefault(); onNav("legales");}}>Términos</a></li>
+                <li><a href="#" onClick={(e)=>{e.preventDefault(); onNav("legales");}}>Privacidad</a></li>
+                <li><a href="#" onClick={(e)=>{e.preventDefault(); onNav("legales");}}>Cookies</a></li>
               </ul>
             </div>
             <div>
@@ -464,18 +644,21 @@
       );
     }
 
-    function WhatsAppFab(){
-      return (<a href="https://wa.me/541175245758?text=Hola%20HRSA%2C%20necesito%20asesoramiento" target="_blank" className="fixed bottom-4 right-4 md:bottom-6 md:right-6 w-12 h-12 rounded-full bg-green-500 grid place-items-center shadow-lg text-white">WA</a>);
+    function WhatsAppFab() {
+      return (
+        <a href="https://wa.me/541175245758?text=Hola%20HRSA%2C%20necesito%20asesoramiento" target="_blank" className="fixed bottom-4 right-4 md:bottom-6 md:right-6 w-12 h-12 rounded-full bg-green-500 grid place-items-center shadow-lg text-white text-xl">Ⓦ</a>
+      );
     }
 
-    // -------- Smoke tests
-    const _assert = (c,m)=>{ if(!c) console.error("[TEST FAIL]",m); else console.info("[TEST PASS]",m); };
-    _assert(Array.isArray(PRODUCTS) && PRODUCTS.length>=6, "PRODUCTS: seeded");
-    _assert(["IRAT","Tinex","Roblex"].every(b => PRODUCTS.some(p=>p.brand===b)), "PRODUCTS: brands present");
-    _assert(typeof imgOr("NOPE")==="string", "imgOr: fallback ok");
+    // ====== Smoke tests (consola) ======
+    function _assert(cond, msg){ if(!cond){ console.error("[TEST FAIL]", msg); } else { console.info("[TEST PASS]", msg); } }
+    _assert(typeof PLACEHOLDER === 'string' && PLACEHOLDER.startsWith('data:image/svg+xml'), 'PLACEHOLDER válido');
+    _assert(typeof motion === 'object' && typeof motion.div === 'function', 'motion shim expone .div');
+    _assert(Array.isArray(PRODUCTS) && PRODUCTS.length >= 6, 'PRODUCTS seeded');
 
-    // Render
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    // Montar la app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<HRSAApp />);
   </script>
 </body>
 </html>
