@@ -655,6 +655,11 @@
     _assert(typeof PLACEHOLDER === 'string' && PLACEHOLDER.startsWith('data:image/svg+xml'), 'PLACEHOLDER válido');
     _assert(typeof motion === 'object' && typeof motion.div === 'function', 'motion shim expone .div');
     _assert(Array.isArray(PRODUCTS) && PRODUCTS.length >= 6, 'PRODUCTS seeded');
+    // Extras (NO modificar los anteriores)
+    _assert(typeof getAsset('HRSA_MARCA') === 'string', 'ASSETS: HRSA_MARCA disponible');
+    _assert(["IRAT","Tinex","Roblex"].every(b => PRODUCTS.some(p=>p.brand===b)), 'PRODUCTS: hay productos de todas las marcas');
+    _assert(imgOr('NOPE', PLACEHOLDER) === PLACEHOLDER, 'imgOr: usa fallback cuando falta asset');
+    _assert(NAV.some(n=>n.id==='contacto'), 'NAV incluye contacto');
 
     // Montar la app
     const root = ReactDOM.createRoot(document.getElementById('root'));
